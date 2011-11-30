@@ -211,6 +211,27 @@ class tx_additionalreports_main
 		}
 	}
 
+	public function getExtPath($extKey, $type = 'L', $returnWithoutExtKey = FALSE) {
+		$typePath = self::typePath($type);
+
+		if ($typePath) {
+			$path = $typePath . ($returnWithoutExtKey ? '' : $extKey . '/');
+			return $path; # @is_dir($path) ? $path : '';
+		} else {
+			return '';
+		}
+	}
+
+	public function typePath($type) {
+		if ($type === 'S') {
+			return PATH_typo3 . 'sysext/';
+		} elseif ($type === 'G') {
+			return PATH_typo3 . 'ext/';
+		} elseif ($type === 'L') {
+			return PATH_typo3conf . 'ext/';
+		}
+	}
+
 	public function versionCompare($depV) {
 		$t3version = TYPO3_version;
 		$depK = 'typo3';
@@ -281,6 +302,7 @@ class tx_additionalreports_main
 		$content .= '<td class="cell" width="40" style="text-align:center;">' . $GLOBALS['LANG']->getLL('downloads') . '</td>';
 		$content .= '<td class="cell" colspan="2">' . $GLOBALS['LANG']->getLL('extensions_tables') . '</td>';
 		$content .= '<td class="cell" width="80" style="text-align:center;">' . $GLOBALS['LANG']->getLL('extensions_tablesintegrity') . '</td>';
+		$content .= '<td class="cell" width="80" style="text-align:center;">' . $GLOBALS['LANG']->getLL('extensions_confintegrity') . '</td>';
 		$content .= '<td class="cell" colspan="2">' . $GLOBALS['LANG']->getLL('extensions_files') . '</td>';
 		$content .= '</tr>';
 
@@ -346,6 +368,27 @@ class tx_additionalreports_main
 						$content .= '<td class="' . $class . '" align="center">' . $GLOBALS['LANG']->getLL('no') . '</td>';
 					}
 
+					// need extconf update
+					$absPath = self::getExtPath($extKey, $extInfo['type']);
+					$configTemplate = t3lib_div::getUrl($absPath . 'ext_conf_template.txt');
+					$tsparserObj = t3lib_div::makeInstance('t3lib_TSparser');
+					$tsparserObj->parse($configTemplate);
+					$arr = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][$extKey]);
+					$arr = is_array($arr) ? $arr : array();
+					$diffConf = array_diff_key($tsparserObj->setup, $arr);
+					if (count($diffConf) > 0) {
+						$id = 'extconf' . $extKey;
+						$datas = '<span style="color:white;">Diff : </span>' . self::view_array($diffConf);
+						$datas .= '<span style="color:white;">$GLOBALS[\'TYPO3_CONF_VARS\'][\'EXT\'][\'extConf\'][\'' . $extKey . '\'] : </span>' . self::view_array($arr);
+						$datas .= '<span style="color:white;">ext_conf_template.txt : </span>' . self::view_array($tsparserObj->setup);
+						$dumpExtConf = '<input type="button" onclick="Shadowbox.open({content:\'<div>\'+$(\'' . $id . '\').innerHTML+\'</div>\',player:\'html\',title:\'' . $extKey . '\',height:600,width:800});"'
+						               . ' value="+"/><div style="display:none;" id="' . $id . '">'
+						               . $datas . '</div>';
+						$content .= '<td class="' . $class . '" align="center"><span style="color:red;font-weight:bold;">' . $GLOBALS['LANG']->getLL('yes') . '&nbsp;&nbsp;' . $dumpExtConf . '</span></td>';
+					} else {
+						$content .= '<td class="' . $class . '" align="center">' . $GLOBALS['LANG']->getLL('no') . '</td>';
+					}
+
 					// modified files
 					if (count($affectedFiles) > 0) {
 						$extensionsModified++;
@@ -362,6 +405,7 @@ class tx_additionalreports_main
 					} else {
 						$content .= '<td class="' . $class . '">&nbsp;</td><td class="' . $class . '">&nbsp;</td>';
 					}
+
 					$content .= '</tr>';
 				}
 			}
@@ -657,6 +701,9 @@ class tx_additionalreports_main
 		}
 		$content .= self::writeInformation('forceCharset', $GLOBALS['TYPO3_CONF_VARS']['BE']['forceCharset'] . '&nbsp;');
 		$content .= self::writeInformation('setDBinit', $GLOBALS['TYPO3_CONF_VARS']['SYS']['setDBinit'] . '&nbsp;');
+		$content .= self::writeInformation('no_pconnect', $GLOBALS['TYPO3_CONF_VARS']['SYS']['no_pconnect'] . '&nbsp;');
+		$content .= self::writeInformation('displayErrors', $GLOBALS['TYPO3_CONF_VARS']['SYS']['displayErrors'] . '&nbsp;');
+		$content .= self::writeInformation('maxFileSize', $GLOBALS['TYPO3_CONF_VARS']['BE']['maxFileSize'] . '&nbsp;');
 		$content .= '<div class="typo3-message message-information">';
 		$content .= '<div class="header-container">';
 		$extensions = explode(',', $GLOBALS['TYPO3_CONF_VARS']['EXT']['extList']);
@@ -681,6 +728,12 @@ class tx_additionalreports_main
 		$content .= self::writeInformation('max_execution_time', ini_get('max_execution_time'));
 		$content .= self::writeInformation('post_max_size', ini_get('post_max_size'));
 		$content .= self::writeInformation('upload_max_filesize', ini_get('upload_max_filesize'));
+		$content .= self::writeInformation('display_errors', ini_get('display_errors'));
+		$content .= self::writeInformation('error_reporting', ini_get('error_reporting'));
+		$apacheUser = posix_getpwuid(posix_getuid());
+		$apacheGroup = posix_getgrgid(posix_getgid());
+		$content .= self::writeInformation('Apache user', $apacheUser['name'] . ' (' . $apacheUser['uid'] . ')');
+		$content .= self::writeInformation('Apache group', $apacheGroup['name'] . ' (' . $apacheGroup['gid'] . ')');
 		$content .= '<div class="typo3-message message-information">';
 		$content .= '<div class="header-container">';
 		$content .= '<div class="message-header message-left">' . $GLOBALS['LANG']->getLL('status_loadedextensions') . '</div>';
@@ -690,9 +743,9 @@ class tx_additionalreports_main
 		natcasesort($extensions);
 		foreach ($extensions as $extension) {
 			if (phpversion($extension)) {
-				$content .= '<li>' . $extension . ' (' . phpversion($extension) . ')</li>';
+				$content .= '<li>' . strtolower($extension) . ' (' . phpversion($extension) . ')</li>';
 			} else {
-				$content .= '<li>' . $extension . '</li>';
+				$content .= '<li>' . strtolower($extension) . '</li>';
 			}
 		}
 		$content .= '</ul>';
@@ -718,24 +771,51 @@ class tx_additionalreports_main
 		$items = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows('default_character_set_name, default_collation_name', 'information_schema.schemata', 'schema_name = \'' . TYPO3_db . '\'');
 		$content .= self::writeInformation('default_character_set_name', $items[0]['default_character_set_name']);
 		$content .= self::writeInformation('default_collation_name', $items[0]['default_collation_name']);
-		$items = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows('table_name, engine, table_collation, table_rows ', 'information_schema.tables', 'table_schema = \'' . TYPO3_db . '\'', '', 'table_name');
+		// SHOW VARIABLES LIKE '%query_cache%'; - SHOW STATUS LIKE '%Qcache%';
+		$queryCache = '';
+		$res = $GLOBALS['TYPO3_DB']->sql_query('SHOW VARIABLES LIKE "%query_cache%";');
+		while ($row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res)) {
+			$queryCache .= $row['Variable_name'] . ' : ' . $row['Value'] . '<br />';
+		}
+		$GLOBALS['TYPO3_DB']->sql_free_result($res);
+		$res = $GLOBALS['TYPO3_DB']->sql_query('SHOW STATUS LIKE "%Qcache%";');
+		while ($row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res)) {
+			$queryCache .= $row['Variable_name'] . ' : ' . $row['Value'] . '<br />';
+		}
+		$GLOBALS['TYPO3_DB']->sql_free_result($res);
+		$content .= self::writeInformation('query_cache', $queryCache);
+		// SHOW VARIABLES LIKE '%character%';
+		$sqlEncoding = '';
+		$res = $GLOBALS['TYPO3_DB']->sql_query('SHOW VARIABLES LIKE "%character%";');
+		while ($row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res)) {
+			$sqlEncoding .= $row['Variable_name'] . ' : ' . $row['Value'] . '<br />';
+		}
+		$GLOBALS['TYPO3_DB']->sql_free_result($res);
+		$content .= self::writeInformation('character_set', $sqlEncoding);
+		// tables
+		$items = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows('table_name, engine, table_collation, table_rows, ((data_length+index_length)/1024/1024) as "size"', 'information_schema.tables', 'table_schema = \'' . TYPO3_db . '\'', '', 'table_name');
 		$content .= '<table cellspacing="1" cellpadding="2" border="0" class="tx_sv_reportlist typo3-dblist" width="100%">';
-		$content .= '<tr class="t3-row-header"><td colspan="4">TYPO3_db - ' . count($items) . ' tables</td></tr>';
+		$content .= '<tr class="t3-row-header"><td colspan="6">' . TYPO3_db . ' - ' . count($items) . ' tables</td></tr>';
 		$content .= '<tr class="c-headLine">';
 		$content .= '<td class="cell">Name</td>';
 		$content .= '<td class="cell">Engine</td>';
 		$content .= '<td class="cell">Collation</td>';
 		$content .= '<td class="cell">Rows</td>';
+		$content .= '<td class="cell">Size (in MB)</td>';
 		$content .= '</tr>';
+		$size = 0;
 		foreach ($items as $itemKey => $itemValue) {
 			$content .= '<tr class="db_list_normal">';
 			$content .= '<td class="cell">' . $itemValue['table_name'] . '</td>';
 			$content .= '<td class="cell">' . $itemValue['engine'] . '</td>';
 			$content .= '<td class="cell">' . $itemValue['table_collation'] . '</td>';
 			$content .= '<td class="cell">' . $itemValue['table_rows'] . '</td>';
+			$content .= '<td class="cell">' . round($itemValue['size'], 2) . '</td>';
+			$size += round($itemValue['size'], 2);
 			$content .= '</tr>';
 
 		}
+		$content .= '<tr class="t3-row-header"><td class="cell" colspan="4">Total</td><td>' . round($size, 2) . ' MB</td></tr>';
 		$content .= '</table>';
 		$content .= '</div>';
 		// Crontab
@@ -1646,7 +1726,7 @@ class tx_additionalreports_main
 			'uid'
 		);
 		$content .= '<table cellspacing="1" cellpadding="2" border="0" class="tx_sv_reportlist typo3-dblist">';
-		$content .= '<tr class="t3-row-header"><td colspan="7">';
+		$content .= '<tr class="t3-row-header"><td colspan="10">';
 		$content .= $GLOBALS['LANG']->getLL('websitesconf_description');
 		$content .= '</td></tr>';
 		$content .= '<tr class="c-headLine">';
@@ -1655,7 +1735,11 @@ class tx_additionalreports_main
 		$content .= '<td class="cell">' . $GLOBALS['LANG']->getLL('domains') . '</td>';
 		$content .= '<td class="cell">sys_template</td>';
 		$content .= '<td class="cell">config.baseURL</td>';
+		$content .= '<td class="cell">pages</td>';
+		$content .= '<td class="cell">pages.hidden</td>';
+		$content .= '<td class="cell">pages.no_search</td>';
 		$content .= '</tr>';
+
 		if (!empty($items)) {
 			foreach ($items as $itemKey => $itemValue) {
 				$domainRecords = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
@@ -1693,11 +1777,54 @@ class tx_additionalreports_main
 				$tmpl->runThroughTemplates($rootLine, 0);
 				$tmpl->generateConfig();
 				$content .= '<td class="cell">' . $tmpl->setup['config.']['baseURL'] . '</td>';
+
+				// count pages
+				$list = self::getTreeList($itemValue['uid'], 99, 0, '1=1');
+				$listArray = explode(',', $list);
+				$content .= '<td class="cell" align="center">' . (count($listArray) - 1) . '</td>';
+				$content .= '<td class="cell" align="center">' . (self::getCountPagesUids($list, 'hidden=1')) . '</td>';
+				$content .= '<td class="cell" align="center">' . (self::getCountPagesUids($list, 'no_search=1')) . '</td>';
+
 				$content .= '</tr>';
 			}
 		}
 		$content .= '</table>';
 		return $content;
+	}
+
+	public function getCountPagesUids($listOfUids, $where = '1=1') {
+		$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery('uid', 'pages', 'uid IN (' . $listOfUids . ') AND ' . $where);
+		$count = $GLOBALS['TYPO3_DB']->sql_num_rows($res);
+		$GLOBALS['TYPO3_DB']->sql_free_result($res);
+		return $count;
+	}
+
+	public function getTreeList($id, $depth, $begin = 0, $perms_clause) {
+		$depth = intval($depth);
+		$begin = intval($begin);
+		$id = intval($id);
+		if ($begin == 0) {
+			$theList = $id;
+		} else {
+			$theList = '';
+		}
+		if ($id && $depth > 0) {
+			$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
+				'uid',
+				'pages',
+				'pid=' . $id . ' ' . t3lib_BEfunc::deleteClause('pages') . ' AND ' . $perms_clause
+			);
+			while ($row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res)) {
+				if ($begin <= 0) {
+					$theList .= ',' . $row['uid'];
+				}
+				if ($depth > 1) {
+					$theList .= self::getTreeList($row['uid'], $depth - 1, $begin - 1, $perms_clause);
+				}
+			}
+			$GLOBALS['TYPO3_DB']->sql_free_result($res);
+		}
+		return $theList;
 	}
 
 }
