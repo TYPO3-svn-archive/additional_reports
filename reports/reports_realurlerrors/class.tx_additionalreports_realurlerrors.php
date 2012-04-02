@@ -30,7 +30,7 @@
  * @package        TYPO3
  */
 
-class tx_additionalreports_logerrors implements tx_reports_Report
+class tx_additionalreports_realurlerrors implements tx_reports_Report
 {
 
 	/**
@@ -67,18 +67,18 @@ class tx_additionalreports_logerrors implements tx_reports_Report
 	 */
 
 	public function getReport() {
-		$this->reportObject->doc->getPageRenderer()->addCssFile(t3lib_extMgm::extRelPath('additional_reports') . 'tx_additionalreports.css');
-		//$actionURL = $this->baseURL . '&cmd=deleteAll';
-		//$content = '<a href="' . $actionURL . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/gfx/garbage.gif"/> ' . $GLOBALS['LANG']->getLL('flushalllog') . '</a>';
-		$content = tx_additionalreports_main::getLogErrors();
+		$this->reportObject->doc->getPageRenderer()->addCssFile(t3lib_extMgm::extRelPath('additional_reports') . 'res/tx_additionalreports.css');
+		$actionURL = $this->baseURL . '&cmd=deleteAll';
+		$content = '<a href="' . $actionURL . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/gfx/garbage.gif"/> ' . $GLOBALS['LANG']->getLL('flushalllog') . '</a>';
+		$content .= tx_additionalreports_main::displayRealUrlErrors();
 		return $content;
 	}
 
 }
 
 
-if (defined('TYPO3_MODE') && $TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/additional_reports/reports_xclass/class.tx_additionalreports_xclass.php']) {
-	include_once($TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/additional_reports/reports_xclass/class.tx_additionalreports_xclass.php']);
+if (defined('TYPO3_MODE') && $TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/additional_reports/reports/reports_xclass/class.tx_additionalreports_xclass.php']) {
+	include_once($TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/additional_reports/reports/reports_xclass/class.tx_additionalreports_xclass.php']);
 }
 
 ?>

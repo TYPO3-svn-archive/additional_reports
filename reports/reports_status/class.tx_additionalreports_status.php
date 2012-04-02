@@ -30,7 +30,7 @@
  * @package        TYPO3
  */
 
-class tx_additionalreports_realurlerrors implements tx_reports_Report
+class tx_additionalreports_status implements tx_reports_Report
 {
 
 	/**
@@ -40,11 +40,9 @@ class tx_additionalreports_realurlerrors implements tx_reports_Report
 	 */
 
 	protected $reportObject;
-	public $nbElementsPerPage = 15;
-	public $baseURL = '';
 
 	/**
-	 * Constructor for class tx_additionalreports_xclass
+	 * Constructor for class tx_additionalreports_status
 	 *
 	 * @param    tx_reports_Module    Back-reference to the calling reports module
 	 */
@@ -52,12 +50,6 @@ class tx_additionalreports_realurlerrors implements tx_reports_Report
 	public function __construct(tx_reports_Module $reportObject) {
 		$this->reportObject = $reportObject;
 		tx_additionalreports_main::init();
-		// Check nb per page
-		$nbPerPage = t3lib_div::_GP('nbPerPage');
-		if ($nbPerPage !== null) {
-			$this->nbElementsPerPage = $nbPerPage;
-		}
-		$this->baseURL = t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'mod.php?M=tools_txreportsM1';
 	}
 
 	/**
@@ -67,18 +59,17 @@ class tx_additionalreports_realurlerrors implements tx_reports_Report
 	 */
 
 	public function getReport() {
-		$this->reportObject->doc->getPageRenderer()->addCssFile(t3lib_extMgm::extRelPath('additional_reports') . 'tx_additionalreports.css');
-		$actionURL = $this->baseURL . '&cmd=deleteAll';
-		$content = '<a href="' . $actionURL . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/gfx/garbage.gif"/> ' . $GLOBALS['LANG']->getLL('flushalllog') . '</a>';
-		$content .= tx_additionalreports_main::getRealUrlErrors();
+		$this->reportObject->doc->getPageRenderer()->addCssFile(t3lib_extMgm::extRelPath('additional_reports') . 'res/tx_additionalreports.css');
+		$content = '<p class="help">' . $GLOBALS['LANG']->getLL('status_description') . '</p>';
+		$content .= tx_additionalreports_main::displayStatus();
 		return $content;
 	}
 
 }
 
 
-if (defined('TYPO3_MODE') && $TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/additional_reports/reports_xclass/class.tx_additionalreports_xclass.php']) {
-	include_once($TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/additional_reports/reports_xclass/class.tx_additionalreports_xclass.php']);
+if (defined('TYPO3_MODE') && $TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/additional_reports/reports/reports_status/class.tx_additionalreports_status.php']) {
+	include_once($TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/additional_reports/reports/reports_status/class.tx_additionalreports_status.php']);
 }
 
 ?>

@@ -3,7 +3,7 @@
 /***************************************************************
  *  Copyright notice
  *
- *  (c) 2011 CERDAN Yohann <cerdanyohann@yahoo.fr>
+ *  (c) 2012 CERDAN Yohann <cerdanyohann@yahoo.fr>
  *  All rights reserved
  *
  *  This script is part of the TYPO3 project. The TYPO3 project is
@@ -26,8 +26,8 @@
 /**
  * This class provides methods to generate the reports
  *
- * @author		CERDAN Yohann <cerdanyohann@yahoo.fr>
- * @package		TYPO3
+ * @author        CERDAN Yohann <cerdanyohann@yahoo.fr>
+ * @package        TYPO3
  */
 
 class tx_additionalreports_main
@@ -73,22 +73,23 @@ class tx_additionalreports_main
 		$content .= '<td class="cell">' . $GLOBALS['LANG']->getLL('path') . '</td>';
 		$content .= '<td class="cell">' . $GLOBALS['LANG']->getLL('user') . '</td>';
 		$content .= '</tr>';
-
 		foreach ($items as $itemKey => $itemValue) {
 			preg_match('/EXT:(.*?)\//', $itemValue[0], $ext);
-			$content .= '<tr class="db_list_normal">';
-			$content .= '<td class="col-icon"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . t3lib_extMgm::extRelPath($ext[1]) . 'ext_icon.gif"/></td>';
-			$content .= '<td class="cell">' . $ext[1] . '</td>';
-			$content .= '<td class="cell">' . $itemKey . '</td>';
-			$content .= '<td class="cell">' . $itemValue[0] . '</td>';
-			$content .= '<td class="cell">' . $itemValue[1] . '</td>';
-			$content .= '</tr>';
+			if (t3lib_extMgm::isLoaded($ext[1])) {
+				$content .= '<tr class="db_list_normal">';
+				$content .= '<td class="col-icon"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . t3lib_extMgm::extRelPath($ext[1]) . 'ext_icon.gif"/></td>';
+				$content .= '<td class="cell">' . $ext[1] . '</td>';
+				$content .= '<td class="cell">' . $itemKey . '</td>';
+				$content .= '<td class="cell">' . $itemValue[0] . '</td>';
+				$content .= '<td class="cell">' . $itemValue[1] . '</td>';
+				$content .= '</tr>';
+			}
 		}
 		$content .= '</table>';
 		return $content;
 	}
 
-	public function displayEID() {
+	public function displayEid() {
 		$content = '';
 		$items = $GLOBALS['TYPO3_CONF_VARS']['FE']['eID_include'];
 		$content .= '<table cellspacing="1" cellpadding="2" border="0" class="tx_sv_reportlist typo3-dblist">';
@@ -103,12 +104,14 @@ class tx_additionalreports_main
 		$content .= '</tr>';
 		foreach ($items as $itemKey => $itemValue) {
 			preg_match('/EXT:(.*?)\//', $itemValue, $ext);
-			$content .= '<tr class="db_list_normal">';
-			$content .= '<td class="col-icon"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . t3lib_extMgm::extRelPath($ext[1]) . 'ext_icon.gif"/></td>';
-			$content .= '<td class="cell">' . $ext[1] . '</td>';
-			$content .= '<td class="cell">' . $itemKey . '</td>';
-			$content .= '<td class="cell">' . $itemValue . '</td>';
-			$content .= '</tr>';
+			if (t3lib_extMgm::isLoaded($ext[1])) {
+				$content .= '<tr class="db_list_normal">';
+				$content .= '<td class="col-icon"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . t3lib_extMgm::extRelPath($ext[1]) . 'ext_icon.gif"/></td>';
+				$content .= '<td class="cell">' . $ext[1] . '</td>';
+				$content .= '<td class="cell">' . $itemKey . '</td>';
+				$content .= '<td class="cell">' . $itemValue . '</td>';
+				$content .= '</tr>';
+			}
 		}
 		$content .= '</table>';
 		return $content;
@@ -128,154 +131,11 @@ class tx_additionalreports_main
 		foreach ($items as $itemKey => $itemValue) {
 			$content .= '<tr class="db_list_normal">';
 			$content .= '<td class="cell">' . $itemKey . '</td>';
-			$content .= '<td class="cell">' . $itemValue . '</td>';
+			$content .= '<td class="cell">' . tx_additionalreports_util::view_array($itemValue) . '</td>';
 			$content .= '</tr>';
 		}
 		$content .= '</table>';
 		return $content;
-	}
-
-	public function splitVersionRange($ver) {
-		$versionRange = array();
-		if (strstr($ver, '-')) {
-			$versionRange = explode('-', $ver, 2);
-		} else {
-			$versionRange[0] = $ver;
-			$versionRange[1] = '';
-		}
-		if (!$versionRange[0]) {
-			$versionRange[0] = '0.0.0';
-		}
-		if (!$versionRange[1]) {
-			$versionRange[1] = '0.0.0';
-		}
-		return $versionRange;
-	}
-
-	public function getExtList($path, &$items) {
-		global $BACK_PATH;
-		if (t3lib_div::int_from_ver(TYPO3_version) <= 4005000) {
-			require_once($BACK_PATH . 'mod/tools/em/class.em_index.php');
-			$em = t3lib_div::makeInstance('SC_mod_tools_em_index');
-			$em->init();
-			$cat = $em->defaultCategories;
-			$em->getInstExtList($path, $items, $cat, 'L');
-		} else {
-			require_once($BACK_PATH . 'sysext/em/classes/extensions/class.tx_em_extensions_list.php');
-			require_once($BACK_PATH . 'sysext/em/classes/extensions/class.tx_em_extensions_details.php');
-			require_once($BACK_PATH . 'sysext/em/classes/tools/class.tx_em_tools_xmlhandler.php');
-			$em = t3lib_div::makeInstance('tx_em_Extensions_List');
-			$cat = tx_em_Tools::getDefaultCategory();
-			$em->getInstExtList($path, $items, $cat, 'L');
-		}
-		return $em;
-	}
-
-	public function getExtAffectedFiles($em, $extKey, $extInfo, &$affectedFiles, &$lastVersion) {
-		if (t3lib_div::int_from_ver(TYPO3_version) <= 4005000) {
-			$currentMd5Array = $em->serverExtensionMD5Array($extKey, $extInfo);
-			$affectedFiles = $em->findMD5ArrayDiff($currentMd5Array, unserialize($extInfo['EM_CONF']['_md5_values_when_last_written']));
-			$lastVersion = self::checkMAJ($em, $extKey);
-		} else {
-			$emDetails = t3lib_div::makeInstance('tx_em_Extensions_Details');
-			$emTools = t3lib_div::makeInstance('tx_em_Tools_XmlHandler');
-			$currentMd5Array = $emDetails->serverExtensionMD5Array($extKey, $extInfo);
-			$affectedFiles = tx_em_Tools::findMD5ArrayDiff($currentMd5Array, unserialize($extInfo['EM_CONF']['_md5_values_when_last_written']));
-			$lastVersion = self::checkMAJ($emTools, $extKey);
-		}
-	}
-
-	public function getExtSQLUpdateStatements($em, $extKey, $extInfo, &$FDfile, &$update_statements) {
-		if (t3lib_div::int_from_ver(TYPO3_version) <= 4005000) {
-			$instObj = new t3lib_install;
-			if (is_array($extInfo['files']) && in_array('ext_tables.sql', $extInfo['files'])) {
-				$fileContent = t3lib_div::getUrl($em->getExtPath($extKey, $extInfo['type']) . 'ext_tables.sql');
-				if (method_exists('t3lib_install', 'getFieldDefinitions_fileContent') === TRUE) { // for compatibility
-					$FDfile = $instObj->getFieldDefinitions_fileContent($fileContent);
-				} else {
-					$FDfile = $instObj->getFieldDefinitions_sqlContent($fileContent);
-				}
-				$FDdb = $instObj->getFieldDefinitions_database(TYPO3_db);
-				$diff = $instObj->getDatabaseExtra($FDfile, $FDdb);
-				$update_statements = $instObj->getUpdateSuggestions($diff);
-			}
-		} else {
-			$instObj = new t3lib_install;
-			if (is_array($extInfo['files']) && in_array('ext_tables.sql', $extInfo['files'])) {
-				$fileContent = t3lib_div::getUrl(tx_em_Tools::getExtPath($extKey, $extInfo['type']) . 'ext_tables.sql');
-				$FDfile = $instObj->getFieldDefinitions_fileContent($fileContent);
-				$FDdb = $instObj->getFieldDefinitions_database(TYPO3_db);
-				$diff = $instObj->getDatabaseExtra($FDfile, $FDdb);
-				$update_statements = $instObj->getUpdateSuggestions($diff);
-			}
-		}
-	}
-
-	public function getExtPath($extKey, $type = 'L', $returnWithoutExtKey = FALSE) {
-		$typePath = self::typePath($type);
-
-		if ($typePath) {
-			$path = $typePath . ($returnWithoutExtKey ? '' : $extKey . '/');
-			return $path; # @is_dir($path) ? $path : '';
-		} else {
-			return '';
-		}
-	}
-
-	public function typePath($type) {
-		if ($type === 'S') {
-			return PATH_typo3 . 'sysext/';
-		} elseif ($type === 'G') {
-			return PATH_typo3 . 'ext/';
-		} elseif ($type === 'L') {
-			return PATH_typo3conf . 'ext/';
-		}
-	}
-
-	public function versionCompare($depV) {
-		$t3version = TYPO3_version;
-		$depK = 'typo3';
-		if (stripos($t3version, '-dev') || stripos($t3version, '-alpha') || stripos($t3version, '-beta') || stripos($t3version, '-RC')) {
-			// find the last occurence of "-" and replace that part with a ".0"
-			$t3version = substr($t3version, 0, strrpos($t3version, '-')) . '.0';
-		}
-
-		$status = 0;
-
-		if (isset($depV)) {
-			$versionRange = self::splitVersionRange($depV);
-			if ($versionRange[0] != '0.0.0' && version_compare($t3version, $versionRange[0], '<')) {
-				$msg = sprintf($GLOBALS['LANG']->getLL('checkDependencies_typo3_too_low'), $t3version, $versionRange[0]);
-			} elseif ($versionRange[1] != '0.0.0' && version_compare($t3version, $versionRange[1], '>')) {
-				$msg = sprintf($GLOBALS['LANG']->getLL('checkDependencies_typo3_too_high'), $t3version, $versionRange[1]);
-			} elseif ($versionRange[1] == '0.0.0') {
-				$status = 2;
-				$msg = $GLOBALS['LANG']->getLL('nottested') . ' (' . $depV . ')';
-			} else {
-				$status = 1;
-				$msg = 'OK';
-			}
-		} else {
-			$status = 3;
-			$msg = $GLOBALS['LANG']->getLL('unknown');
-		}
-
-		switch ($status) {
-			case 0:
-				$msg = '<span style="color:red;font-weight:bold;" title="' . $msg . '">KO</span>';
-				break;
-			case 1:
-				$msg = '<span style="color:green;font-weight:bold;" title="' . $msg . '">OK</span>';
-				break;
-			case 2:
-				$msg = '<span style="color:orange;font-weight:bold;" title="' . $msg . '">' . $GLOBALS['LANG']->getLL('nottested') . '</span>';
-				break;
-			case 3:
-				$msg = '<span style="color:orange;font-weight:bold;" title="' . $msg . '">' . $GLOBALS['LANG']->getLL('unknown') . '</span>';
-				break;
-		}
-
-		return $msg;
 	}
 
 	public function displayExtensions() {
@@ -284,51 +144,38 @@ class tx_additionalreports_main
 		$path = PATH_typo3conf . 'ext/';
 		$items = array();
 		$itemsDev = array();
+		$itemsUnloaded = array();
 
-		$em = self::getExtList($path, $items);
+		$em = tx_additionalreports_util::getExtList($path, $items);
 
 		$content .= '<script type="text/javascript">Shadowbox.init({displayNav:true,displayCounter:false,overlayOpacity:0.8});</script>';
 
-		$content .= '<table cellspacing="1" cellpadding="2" border="0" class="tx_sv_reportlist typo3-dblist">';
-		$content .= '<tr class="t3-row-header"><td colspan="15">';
-		$content .= $GLOBALS['LANG']->getLL('extensions_ter') . ' (TYPO3 ' . TYPO3_version . ')';
-		$content .= '</td></tr>';
-		$content .= '<tr class="c-headLine">';
-		$content .= '<td class="cell">&nbsp;</td>';
-		$content .= '<td class="cell" width="150" colspan="2">' . $GLOBALS['LANG']->getLL('extension') . '</td>';
-		$content .= '<td class="cell" width="40" style="text-align:center;">' . $GLOBALS['LANG']->getLL('status_version') . '</td>';
-		$content .= '<td class="cell" width="40" style="text-align:center;">' . $GLOBALS['LANG']->getLL('versioncheck') . '</td>';
-		$content .= '<td class="cell" width="40" style="text-align:center;">' . $GLOBALS['LANG']->getLL('status_lastversion') . '</td>';
-		$content .= '<td class="cell" width="40" style="text-align:center;">' . $GLOBALS['LANG']->getLL('downloads') . '</td>';
-		$content .= '<td class="cell" colspan="2">' . $GLOBALS['LANG']->getLL('extensions_tables') . '</td>';
-		$content .= '<td class="cell" width="80" style="text-align:center;">' . $GLOBALS['LANG']->getLL('extensions_tablesintegrity') . '</td>';
-		$content .= '<td class="cell" width="80" style="text-align:center;">' . $GLOBALS['LANG']->getLL('extensions_confintegrity') . '</td>';
-		$content .= '<td class="cell" colspan="2">' . $GLOBALS['LANG']->getLL('extensions_files') . '</td>';
-		$content .= '</tr>';
-
 		$extensionsToUpdate = 0;
-		$extensionsDEV = 0;
+		$extensionsDev = 0;
+		$extensionsLoaded = 0;
 		$extensionsModified = 0;
 
 		foreach ($items as $itemKey => $itemValue) {
 			if (t3lib_extMgm::isLoaded($itemKey)) {
+				$extensionsLoaded++;
+
 				$extKey = $itemKey;
 				$extInfo = $itemValue;
-				$FDfile = array();
-				$update_statements = array();
+				$fdFile = array();
+				$updateStatements = array();
 				$affectedFiles = array();
 				$lastVersion = '';
 
-				self::getExtAffectedFiles($em, $extKey, $extInfo, $affectedFiles, $lastVersion);
-				self::getExtSQLUpdateStatements($em, $extKey, $extInfo, $FDfile, $update_statements);
+				tx_additionalreports_util::getExtAffectedFiles($em, $extKey, $extInfo, $affectedFiles, $lastVersion);
+				tx_additionalreports_util::getExtSqlUpdateStatements($em, $extKey, $extInfo, $fdFile, $updateStatements);
 
-				$class = "cell";
+				$class = 'cell';
 
 				if (!$lastVersion) {
 					$itemsDev[$itemKey] = $itemValue;
-					$extensionsDEV++;
+					$extensionsDev++;
 					$lastVersion = '/';
-					$class = "specs";
+					$class = 'specs';
 				} else {
 
 					$content .= '<tr class="db_list_normal">';
@@ -336,7 +183,7 @@ class tx_additionalreports_main
 					$content .= '<td class="' . $class . '">' . $extKey . '</td>';
 					$content .= '<td width="30" class="' . $class . '" align="center"><a href="#" onclick="top.goToModule(\'tools_em\', 1, \'CMD[showExt]=' . $extKey . '&SET[singleDetails]=info\')"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/gfx/zoom.gif"/></a></td>';
 					$content .= '<td class="' . $class . '" align="center">' . $itemValue['EM_CONF']['version'] . '</td>';
-					$content .= '<td class="' . $class . '" align="center">' . self::versionCompare($itemValue['EM_CONF']['constraints']['depends']['typo3']) . '</td>';
+					$content .= '<td class="' . $class . '" align="center">' . tx_additionalreports_util::versionCompare($itemValue['EM_CONF']['constraints']['depends']['typo3']) . '</td>';
 
 					// need extension update ?
 					$updateDate = date('d/m/Y', $lastVersion['lastuploaddate']);
@@ -349,41 +196,44 @@ class tx_additionalreports_main
 					$content .= '<td class="' . $class . '" align="center">' . $lastVersion['alldownloadcounter'] . '</td>';
 
 					// show db
-					$dump_tf1 = '';
-					$dump_tf2 = '';
-					if (count($FDfile) > 0) {
+					$dumpTf1 = '';
+					$dumpTf2 = '';
+					if (count($fdFile) > 0) {
 						$id = 'sql' . $extKey;
-						$dump_tf1 = count($FDfile) . ' ' . $GLOBALS['LANG']->getLL('extensions_tablesmodified');
-						$dump_tf2 = '<input type="button" onclick="Shadowbox.open({content:\'<div>\'+$(\'' . $id . '\').innerHTML+\'</div>\',player:\'html\',title:\'' . $extKey . '\',height:600,width:800});"'
-						            . ' value="+"/><div style="display:none;" id="' . $id . '">'
-						            . self::view_array($FDfile) . '</div>';
+						$dumpTf1 = count($fdFile) . ' ' . $GLOBALS['LANG']->getLL('extensions_tablesmodified');
+						$dumpTf2 = '<input type="button" onclick="Shadowbox.open({content:\'<div>\'+$(\'' . $id . '\').innerHTML+\'</div>\',player:\'html\',title:\'' . $extKey . '\',height:600,width:800});"'
+								. ' value="+"/><div style="display:none;" id="' . $id . '">'
+								. tx_additionalreports_util::view_array($fdFile) . '</div>';
 					}
-					$content .= '<td class="' . $class . '">' . $dump_tf1 . '</td>';
-					$content .= '<td width="30" class="' . $class . '">' . $dump_tf2 . '</td>';
+					$content .= '<td class="' . $class . '">' . $dumpTf1 . '</td>';
+					$content .= '<td width="30" class="' . $class . '">' . $dumpTf2 . '</td>';
 
 					// need db update
-					if (count($update_statements) > 0) {
+					if (count($updateStatements) > 0) {
 						$content .= '<td class="' . $class . '" align="center"><span style="color:red;font-weight:bold;">' . $GLOBALS['LANG']->getLL('yes') . '</span></td>';
 					} else {
 						$content .= '<td class="' . $class . '" align="center">' . $GLOBALS['LANG']->getLL('no') . '</td>';
 					}
 
 					// need extconf update
-					$absPath = self::getExtPath($extKey, $extInfo['type']);
+					$absPath = tx_additionalreports_util::getExtPath($extKey, $extInfo['type']);
 					$configTemplate = t3lib_div::getUrl($absPath . 'ext_conf_template.txt');
 					$tsparserObj = t3lib_div::makeInstance('t3lib_TSparser');
 					$tsparserObj->parse($configTemplate);
 					$arr = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][$extKey]);
 					$arr = is_array($arr) ? $arr : array();
 					$diffConf = array_diff_key($tsparserObj->setup, $arr);
+					if (isset($diffConf['updateMessage'])) {
+						unset($diffConf['updateMessage']);
+					}
 					if (count($diffConf) > 0) {
 						$id = 'extconf' . $extKey;
-						$datas = '<span style="color:white;">Diff : </span>' . self::view_array($diffConf);
-						$datas .= '<span style="color:white;">$GLOBALS[\'TYPO3_CONF_VARS\'][\'EXT\'][\'extConf\'][\'' . $extKey . '\'] : </span>' . self::view_array($arr);
-						$datas .= '<span style="color:white;">ext_conf_template.txt : </span>' . self::view_array($tsparserObj->setup);
+						$datas = '<span style="color:white;">Diff : </span>' . tx_additionalreports_util::view_array($diffConf);
+						$datas .= '<span style="color:white;">$GLOBALS[\'TYPO3_CONF_VARS\'][\'EXT\'][\'extConf\'][\'' . $extKey . '\'] : </span>' . tx_additionalreports_util::view_array($arr);
+						$datas .= '<span style="color:white;">ext_conf_template.txt : </span>' . tx_additionalreports_util::view_array($tsparserObj->setup);
 						$dumpExtConf = '<input type="button" onclick="Shadowbox.open({content:\'<div>\'+$(\'' . $id . '\').innerHTML+\'</div>\',player:\'html\',title:\'' . $extKey . '\',height:600,width:800});"'
-						               . ' value="+"/><div style="display:none;" id="' . $id . '">'
-						               . $datas . '</div>';
+								. ' value="+"/><div style="display:none;" id="' . $id . '">'
+								. $datas . '</div>';
 						$content .= '<td class="' . $class . '" align="center"><span style="color:red;font-weight:bold;">' . $GLOBALS['LANG']->getLL('yes') . '&nbsp;&nbsp;' . $dumpExtConf . '</span></td>';
 					} else {
 						$content .= '<td class="' . $class . '" align="center">' . $GLOBALS['LANG']->getLL('no') . '</td>';
@@ -396,8 +246,8 @@ class tx_additionalreports_main
 						$content .= '<td class="' . $class . '"><span style="color:red;font-weight:bold;">' . count($affectedFiles) . ' ' . $GLOBALS['LANG']->getLL('extensions_filesmodified') . '</span>';
 						$content .= '<div style="display:none;" id="' . $id . '"><ul>';
 						foreach ($affectedFiles as $affectedFile) {
-							$compareURL = t3lib_div::getIndpEnv('TYPO3_SITE_URL') . ('index.php?eID=additional_reports_compareFiles&extKey=' . $extKey . '&extFile=' . $affectedFile . '&extVersion=' . $itemValue['EM_CONF']['version']);
-							$content .= '<li><a rel="shadowbox;height=600;width=800;" href = "' . $compareURL . '" target = "_blank" title="' . $affectedFile . ' : ' . $extKey . ' ' . $itemValue['EM_CONF']['version'] . '" > ' . $affectedFile . '</a></li>';
+							$compareUrl = t3lib_div::getIndpEnv('TYPO3_SITE_URL') . ('index.php?eID=additional_reports_compareFiles&extKey=' . $extKey . '&extFile=' . $affectedFile . '&extVersion=' . $itemValue['EM_CONF']['version']);
+							$content .= '<li><a rel="shadowbox;height=600;width=800;" href = "' . $compareUrl . '" target = "_blank" title="' . $affectedFile . ' : ' . $extKey . ' ' . $itemValue['EM_CONF']['version'] . '" > ' . $affectedFile . '</a></li>';
 						}
 						$content .= '</ul>';
 						$content .= '</div></td>';
@@ -408,14 +258,35 @@ class tx_additionalreports_main
 
 					$content .= '</tr>';
 				}
+			} else {
+				$itemsUnloaded[$itemKey] = $itemValue;
 			}
 		}
 
+		$contentHead = '<table cellspacing="1" cellpadding="2" border="0" class="tx_sv_reportlist typo3-dblist">';
+		$contentHead .= '<tr class="t3-row-header"><td colspan="15">';
+		$contentHead .= $extensionsLoaded - count($itemsDev) . ' ' . $GLOBALS['LANG']->getLL('extensions_ter');
+		$contentHead .= '</td></tr>';
+		$contentHead .= '<tr class="c-headLine">';
+		$contentHead .= '<td class="cell">&nbsp;</td>';
+		$contentHead .= '<td class="cell" width="150" colspan="2">' . $GLOBALS['LANG']->getLL('extension') . '</td>';
+		$contentHead .= '<td class="cell" width="40" style="text-align:center;">' . $GLOBALS['LANG']->getLL('status_version') . '</td>';
+		$contentHead .= '<td class="cell" width="40" style="text-align:center;">' . $GLOBALS['LANG']->getLL('versioncheck') . '</td>';
+		$contentHead .= '<td class="cell" width="40" style="text-align:center;">' . $GLOBALS['LANG']->getLL('status_lastversion') . '</td>';
+		$contentHead .= '<td class="cell" width="40" style="text-align:center;">' . $GLOBALS['LANG']->getLL('downloads') . '</td>';
+		$contentHead .= '<td class="cell" colspan="2">' . $GLOBALS['LANG']->getLL('extensions_tables') . '</td>';
+		$contentHead .= '<td class="cell" width="80" style="text-align:center;">' . $GLOBALS['LANG']->getLL('extensions_tablesintegrity') . '</td>';
+		$contentHead .= '<td class="cell" width="80" style="text-align:center;">' . $GLOBALS['LANG']->getLL('extensions_confintegrity') . '</td>';
+		$contentHead .= '<td class="cell" colspan="2">' . $GLOBALS['LANG']->getLL('extensions_files') . '</td>';
+		$contentHead .= '</tr>';
+		$content = $contentHead . $content;
 		$content .= '</table>';
+
+		// specific developpment(s)
 
 		$content .= '<table cellspacing="1" cellpadding="2" border="0" class="tx_sv_reportlist typo3-dblist">';
 		$content .= '<tr class="t3-row-header"><td colspan="15">';
-		$content .= $GLOBALS['LANG']->getLL('extensions_dev');
+		$content .= count($itemsDev) . ' ' . $GLOBALS['LANG']->getLL('extensions_dev');
 		$content .= '</td></tr>';
 		$content .= '<tr class="c-headLine">';
 		$content .= '<td class="cell">&nbsp;</td>';
@@ -423,20 +294,16 @@ class tx_additionalreports_main
 		$content .= '<td class="cell" width="40" style="text-align:center;">' . $GLOBALS['LANG']->getLL('status_version') . '</td>';
 		$content .= '<td class="cell" colspan="2">' . $GLOBALS['LANG']->getLL('extensions_tables') . '</td>';
 		$content .= '<td class="cell" width="80" style="text-align:center;">' . $GLOBALS['LANG']->getLL('extensions_tablesintegrity') . '</td>';
-		$content .= '<td class="cell" colspan="2">' . $GLOBALS['LANG']->getLL('extensions_files') . '</td>';
 		$content .= '</tr>';
 
 		foreach ($itemsDev as $itemKey => $itemValue) {
 			if (t3lib_extMgm::isLoaded($itemKey)) {
 				$extKey = $itemKey;
 				$extInfo = $itemValue;
-				$FDfile = array();
-				$update_statements = array();
-				$affectedFiles = array();
-				$lastVersion = '';
+				$fdFile = array();
+				$updateStatements = array();
 
-				self::getExtAffectedFiles($em, $extKey, $extInfo, $affectedFiles, $lastVersion);
-				self::getExtSQLUpdateStatements($em, $extKey, $extInfo, $FDfile, $update_statements);
+				tx_additionalreports_util::getExtSqlUpdateStatements($em, $extKey, $extInfo, $fdFile, $updateStatements);
 
 				$class = "cell";
 
@@ -447,51 +314,85 @@ class tx_additionalreports_main
 				$content .= '<td class="' . $class . '" align="center">' . $itemValue['EM_CONF']['version'] . '</td>';
 
 				// show db
-				$dump_tf1 = '';
-				$dump_tf2 = '';
-				if (count($FDfile) > 0) {
+				$dumpTf1 = '';
+				$dumpTf2 = '';
+				if (count($fdFile) > 0) {
 					$id = 'sql' . $extKey;
-					$dump_tf1 = count($FDfile) . ' ' . $GLOBALS['LANG']->getLL('extensions_tablesmodified');
-					$dump_tf2 = '<input type="button" onclick="Shadowbox.open({content:\'<div>\'+$(\'' . $id . '\').innerHTML+\'</div>\',player:\'html\',title:\'' . $extKey . '\',height:600,width:800});"'
-					            . ' value="+"/><div style="display:none;" id="' . $id . '">'
-					            . self::view_array($FDfile) . '</div>';
+					$dumpTf1 = count($fdFile) . ' ' . $GLOBALS['LANG']->getLL('extensions_tablesmodified');
+					$dumpTf2 = '<input type="button" onclick="Shadowbox.open({content:\'<div>\'+$(\'' . $id . '\').innerHTML+\'</div>\',player:\'html\',title:\'' . $extKey . '\',height:600,width:800});"'
+							. ' value="+"/><div style="display:none;" id="' . $id . '">'
+							. tx_additionalreports_util::view_array($fdFile) . '</div>';
 				}
-				$content .= '<td class="' . $class . '">' . $dump_tf1 . '</td>';
-				$content .= '<td width="30" class="' . $class . '">' . $dump_tf2 . '</td>';
+				$content .= '<td class="' . $class . '">' . $dumpTf1 . '</td>';
+				$content .= '<td width="30" class="' . $class . '">' . $dumpTf2 . '</td>';
 
 				// need db update
-				if (count($update_statements) > 0) {
+				if (count($updateStatements) > 0) {
 					$content .= '<td class="' . $class . '" align="center"><span style="color:red;font-weight:bold;">' . $GLOBALS['LANG']->getLL('yes') . '</span></td>';
 				} else {
 					$content .= '<td class="' . $class . '" align="center">' . $GLOBALS['LANG']->getLL('no') . '</td>';
 				}
 
-				// modified files
-				if (count($affectedFiles) > 0) {
-					$id = 'files' . $extKey;
-					$content .= '<td class="' . $class . '"><span style="color:red;font-weight:bold;">' . count($affectedFiles) . ' ' . $GLOBALS['LANG']->getLL('extensions_filesmodified') . '</span>';
-					$content .= '<div style="display:none;" id="' . $id . '"><ul>';
-					foreach ($affectedFiles as $affectedFile) {
-						$content .= '<li>' . $affectedFile . '</li>';
-					}
-					$content .= '</ul>';
-					$content .= '</div></td>';
-					$content .= '<td width="30" class="' . $class . '" align="center"><input type="button" onclick="$(\'' . $id . '\').toggle();" value="+"/></td>';
-				} else {
-					$content .= '<td class="' . $class . '">&nbsp;</td><td class="' . $class . '">&nbsp;</td>';
-				}
+
 				$content .= '</tr>';
 			}
 		}
 
 		$content .= '</table>';
 
+		// unloaded extension(s)
+
+		$content .= '<table cellspacing="1" cellpadding="2" border="0" class="tx_sv_reportlist typo3-dblist">';
+		$content .= '<tr class="t3-row-header"><td colspan="15">';
+		$content .= count($itemsUnloaded) . ' ' . $GLOBALS['LANG']->getLL('extensions_unloaded');
+		$content .= '</td></tr>';
+		$content .= '<tr class="c-headLine">';
+		$content .= '<td class="cell">&nbsp;</td>';
+		$content .= '<td class="cell" width="150" colspan="2">' . $GLOBALS['LANG']->getLL('extension') . '</td>';
+		$content .= '<td class="cell" width="40" style="text-align:center;">' . $GLOBALS['LANG']->getLL('status_version') . '</td>';
+		$content .= '<td class="cell" colspan="2">' . $GLOBALS['LANG']->getLL('extensions_tables') . '</td>';
+		$content .= '</tr>';
+
+		foreach ($itemsUnloaded as $itemKey => $itemValue) {
+			$extKey = $itemKey;
+			$extInfo = $itemValue;
+			$fdFile = array();
+			$updateStatements = array();
+
+			tx_additionalreports_util::getExtSqlUpdateStatements($em, $extKey, $extInfo, $fdFile, $updateStatements);
+
+			$class = "cell";
+
+			$content .= '<tr class="db_list_normal">';
+			$content .= '<td class="col-icon ' . $class . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_SITE_URL') . 'typo3conf/ext/' . $extKey . '/ext_icon.gif"/></td>';
+			$content .= '<td class="' . $class . '">' . $extKey . '</td>';
+			$content .= '<td width="30" class="' . $class . '" align="center"><a href="#" onclick="top.goToModule(\'tools_em\', 1, \'CMD[showExt]=' . $extKey . '&SET[singleDetails]=info\')"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/gfx/zoom.gif"/></a></td>';
+			$content .= '<td class="' . $class . '" align="center">' . $itemValue['EM_CONF']['version'] . '</td>';
+
+			// show db
+			$dumpTf1 = '';
+			$dumpTf2 = '';
+			if (count($fdFile) > 0) {
+				$id = 'sql' . $extKey;
+				$dumpTf1 = count($fdFile) . ' ' . $GLOBALS['LANG']->getLL('extensions_tablesmodified');
+				$dumpTf2 = '<input type="button" onclick="Shadowbox.open({content:\'<div>\'+$(\'' . $id . '\').innerHTML+\'</div>\',player:\'html\',title:\'' . $extKey . '\',height:600,width:800});"'
+						. ' value="+"/><div style="display:none;" id="' . $id . '">'
+						. tx_additionalreports_util::view_array($fdFile) . '</div>';
+			}
+			$content .= '<td class="' . $class . '">' . $dumpTf1 . '</td>';
+			$content .= '<td width="30" class="' . $class . '">' . $dumpTf2 . '</td>';
+
+			$content .= '</tr>';
+		}
+
+		$content .= '</table>';
+
 		$addContent = '';
-		$addContent .= count($items) . ' ' . $GLOBALS['LANG']->getLL('extensions_extensions');
+		$addContent .= $extensionsLoaded . ' ' . $GLOBALS['LANG']->getLL('extensions_extensions');
 		$addContent .= '<br/>';
-		$addContent .= count($items) - count($itemsDev) . ' ' . $GLOBALS['LANG']->getLL('extensions_ter');
+		$addContent .= $extensionsLoaded - count($itemsDev) . ' ' . $GLOBALS['LANG']->getLL('extensions_ter');
 		$addContent .= '  /  ';
-		$addContent .= $extensionsDEV . ' ' . $GLOBALS['LANG']->getLL('extensions_dev');
+		$addContent .= $extensionsDev . ' ' . $GLOBALS['LANG']->getLL('extensions_dev');
 		$addContent .= '<br/>';
 		$addContent .= $extensionsToUpdate . ' ' . $GLOBALS['LANG']->getLL('extensions_toupdate');
 		$addContent .= '  /  ';
@@ -500,25 +401,6 @@ class tx_additionalreports_main
 
 		$content = $addContentItem . $content;
 		return $content;
-	}
-
-	public function checkMAJ($em, $name) {
-		if (t3lib_div::int_from_ver(TYPO3_version) <= 4005000) {
-			$em->xmlhandler->searchExtensionsXML($name, '', '', TRUE, TRUE, 0, 500, TRUE);
-			$v = $em->xmlhandler->extensionsXML[$name]['versions'];
-		} else {
-			$em->searchExtensionsXML($name, '', '', TRUE, TRUE, 0, 500, TRUE);
-			$v = $em->extensionsXML[$name]['versions'];
-		}
-		if (is_array($v)) {
-			$versions = array_keys($v);
-			natsort($versions);
-			$lastversion = end($versions);
-			return $v[$lastversion];
-			return $lastversion;
-		} else {
-			return null;
-		}
 	}
 
 	public function writeInformation($label, $value) {
@@ -531,48 +413,6 @@ class tx_additionalreports_main
 				<div class="message-body"></div>
 			</div>
 		';
-	}
-
-	public function view_array($array_in) {
-		if (is_array($array_in)) {
-			$result = '
-			<table border="1" cellpadding="1" cellspacing="0" bgcolor="white" width="100%">';
-			if (count($array_in) == 0) {
-				$result .= '<tr><td><font face="Verdana,Arial" size="1"><strong>EMPTY!</strong></font></td></tr>';
-			} else {
-				foreach ($array_in as $key => $val) {
-					$result .= '<tr>
-						<td valign="top"><font face="Verdana,Arial" size="1">' . htmlspecialchars((string)$key) . '</font></td>
-						<td>';
-					if (is_array($val)) {
-						$result .= self::view_array($val);
-					} elseif (is_object($val)) {
-						$string = get_class($val);
-						if (method_exists($val, '__toString')) {
-							$string .= ': ' . (string)$val;
-						}
-						$result .= '<font face="Verdana,Arial" size="1" color="red">' . nl2br(htmlspecialchars($string)) . '<br /></font>';
-					} else {
-						if (gettype($val) == 'object') {
-							$string = 'Unknown object';
-						} else {
-							$string = (string)$val;
-						}
-						$result .= '<font face="Verdana,Arial" size="1" color="red">' . nl2br(htmlspecialchars($string)) . '<br /></font>';
-					}
-					$result .= '</td>
-					</tr>';
-				}
-			}
-			$result .= '</table>';
-		} else {
-			$result = '<table border="0" cellpadding="1" cellspacing="0" bgcolor="white">
-				<tr>
-					<td><font face="Verdana,Arial" size="1" color="red">' . nl2br(htmlspecialchars((string)$array_in)) . '<br /></font></td>
-				</tr>
-			</table>'; // Output it as a string.
-		}
-		return $result;
 	}
 
 	public function displayHooks() {
@@ -617,7 +457,7 @@ class tx_additionalreports_main
 		$content .= '</table>';
 
 		// extension hooks (we read the temp_CACHED and look for $EXTCONF modification)
-		$tempCached = self::getCacheFilePrefix() . '_ext_localconf.php';
+		$tempCached = tx_additionalreports_util::getCacheFilePrefix() . '_ext_localconf.php';
 		$items = array();
 		if (is_file(PATH_site . 'typo3conf/' . $tempCached)) {
 			$handle = fopen(PATH_site . 'typo3conf/' . $tempCached, 'r');
@@ -626,9 +466,9 @@ class tx_additionalreports_main
 				while (!feof($handle)) {
 					$buffer = fgets($handle);
 					if ($extension != '') {
-						if (preg_match("/\['EXTCONF'\]\['(.*?)'\].*?=/", $buffer, $matches)) {
+						if (preg_match("/\['EXTCONF'\]\['(.*?)'\](.*?)\s*=/", $buffer, $matches)) {
 							if ($matches[1] != $extension) {
-								$items [] = array($extension, $buffer);
+								$items [] = array($extension, $matches[1] . ' --> ' . $matches[2]);
 							}
 						}
 					}
@@ -663,26 +503,6 @@ class tx_additionalreports_main
 		return $content;
 	}
 
-	public function getCacheFilePrefix() {
-		$extensionCacheBehaviour = intval($GLOBALS['TYPO3_CONF_VARS']['EXT']['extCache']);
-
-		// Caching of extensions is disabled when install tool is used:
-		if (defined('TYPO3_enterInstallScript') && TYPO3_enterInstallScript) {
-			$extensionCacheBehaviour = 0;
-		}
-
-		$cacheFileSuffix = (TYPO3_MODE == 'FE' ? '_FE' : '');
-		$cacheFilePrefix = 'temp_CACHED' . $cacheFileSuffix;
-
-		if ($extensionCacheBehaviour == 1) {
-			$cacheFilePrefix .= '_ps' . substr(t3lib_div::shortMD5(PATH_site . '|' . $GLOBALS['TYPO_VERSION']), 0, 4);
-		} elseif ($extensionCacheBehaviour == 2) {
-			$cacheFilePrefix .= '_' . t3lib_div::shortMD5(self::getEnabledExtensionList());
-		}
-
-		return $cacheFilePrefix;
-	}
-
 	public function displayStatus() {
 		$content = '';
 		// Typo3
@@ -712,7 +532,7 @@ class tx_additionalreports_main
 		$content .= '<div class="message-header message-right">';
 		$content .= '<ul>';
 		foreach ($extensions as $extension) {
-			$content .= '<li>' . $extension . ' (' . self::getExtensionVersion($extension) . ')</li>';
+			$content .= '<li>' . $extension . ' (' . tx_additionalreports_util::getExtensionVersion($extension) . ')</li>';
 		}
 		$content .= '</ul>';
 		$content .= '</div>';
@@ -730,10 +550,12 @@ class tx_additionalreports_main
 		$content .= self::writeInformation('upload_max_filesize', ini_get('upload_max_filesize'));
 		$content .= self::writeInformation('display_errors', ini_get('display_errors'));
 		$content .= self::writeInformation('error_reporting', ini_get('error_reporting'));
-		$apacheUser = posix_getpwuid(posix_getuid());
-		$apacheGroup = posix_getgrgid(posix_getgid());
-		$content .= self::writeInformation('Apache user', $apacheUser['name'] . ' (' . $apacheUser['uid'] . ')');
-		$content .= self::writeInformation('Apache group', $apacheGroup['name'] . ' (' . $apacheGroup['gid'] . ')');
+		if (function_exists('posix_getpwuid') && function_exists('posix_getgrgid')) {
+			$apacheUser = posix_getpwuid(posix_getuid());
+			$apacheGroup = posix_getgrgid(posix_getgid());
+			$content .= self::writeInformation('Apache user', $apacheUser['name'] . ' (' . $apacheUser['uid'] . ')');
+			$content .= self::writeInformation('Apache group', $apacheGroup['name'] . ' (' . $apacheGroup['gid'] . ')');
+		}
 		$content .= '<div class="typo3-message message-information">';
 		$content .= '<div class="header-container">';
 		$content .= '<div class="message-header message-left">' . $GLOBALS['LANG']->getLL('status_loadedextensions') . '</div>';
@@ -742,11 +564,7 @@ class tx_additionalreports_main
 		$extensions = get_loaded_extensions();
 		natcasesort($extensions);
 		foreach ($extensions as $extension) {
-			if (phpversion($extension)) {
-				$content .= '<li>' . strtolower($extension) . ' (' . phpversion($extension) . ')</li>';
-			} else {
-				$content .= '<li>' . strtolower($extension) . '</li>';
-			}
+			$content .= '<li>' . strtolower($extension) . '</li>';
 		}
 		$content .= '</ul>';
 		$content .= '</div>';
@@ -856,20 +674,6 @@ class tx_additionalreports_main
 		return $content;
 	}
 
-	public static function getExtensionVersion($key) {
-		if (!is_string($key) || empty($key)) {
-			throw new InvalidArgumentException('Extension key must be a non-empty string.');
-		}
-		if (!t3lib_extMgm::isLoaded($key)) {
-			return '';
-		}
-
-		$_EXTKEY = $key;
-		include(t3lib_extMgm::extPath($key) . 'ext_emconf.php');
-
-		return $EM_CONF[$key]['version'];
-	}
-
 	public function displayXclass() {
 		$content = '';
 		$items = $GLOBALS['TYPO3_CONF_VARS']['BE']['XCLASS'];
@@ -966,10 +770,10 @@ class tx_additionalreports_main
 				$content .= self::getSummary();
 				break;
 			case 6 :
-				$content .= self::getAllUsedPlugins(true);
+				$content .= self::getAllUsedPlugins(TRUE);
 				break;
 			case 7 :
-				$content .= self::getAllUsedCType(true);
+				$content .= self::getAllUsedCType(TRUE);
 				break;
 		}
 
@@ -988,6 +792,8 @@ class tx_additionalreports_main
 		$content .= '<td class="cell">' . $GLOBALS['LANG']->getLL('plugin') . '</td>';
 		$content .= '<td class="cell">' . $GLOBALS['LANG']->getLL('eminfo') . '</td>';
 		$content .= '<td class="cell">' . $GLOBALS['LANG']->getLL('used') . '</td>';
+		$content .= '<td class="cell">' . $GLOBALS['LANG']->getLL('used') . ' (hidden=1)</td>';
+		$content .= '<td class="cell">' . $GLOBALS['LANG']->getLL('used') . ' (deleted=1)</td>';
 		$content .= '</tr>';
 		foreach ($GLOBALS['TCA']['tt_content']['columns']['list_type']['config']['items'] as $itemKey => $itemValue) {
 			if (trim($itemValue[1]) != '') {
@@ -999,9 +805,23 @@ class tx_additionalreports_main
 				$content .= '<td class="cell">' . $ext[1] . '</td>';
 				$content .= '<td class="cell">' . $GLOBALS['LANG']->getLLL($llfile[2], $LOCAL_LANG) . ' (' . $itemValue[1] . ')</td>';
 				$content .= '<td class="cell"><a href="#" onclick="top.goToModule(\'tools_em\', 1, \'CMD[showExt]=' . $ext[1] . '&SET[singleDetails]=info\')">' . $GLOBALS['LANG']->getLL('emlink') . '</a></td>';
+
 				$items = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows('DISTINCT tt_content.list_type,tt_content.pid,pages.title', 'tt_content,pages', 'tt_content.pid=pages.uid AND tt_content.hidden=0 AND tt_content.deleted=0 AND pages.hidden=0 AND pages.deleted=0 AND tt_content.CType=\'list\' AND tt_content.list_type=\'' . $itemValue[1] . '\'', '', 'tt_content.list_type');
+				$itemsHidden = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows('DISTINCT tt_content.list_type,tt_content.pid,pages.title', 'tt_content,pages', 'tt_content.pid=pages.uid AND (tt_content.hidden=1 OR pages.hidden=1) AND tt_content.deleted=0 AND pages.deleted=0 AND tt_content.CType=\'list\' AND tt_content.list_type=\'' . $itemValue[1] . '\'', '', 'tt_content.list_type');
+				$itemsDeleted = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows('DISTINCT tt_content.list_type,tt_content.pid,pages.title', 'tt_content,pages', 'tt_content.pid=pages.uid AND (tt_content.deleted=1 OR pages.deleted=1) AND tt_content.CType=\'list\' AND tt_content.list_type=\'' . $itemValue[1] . '\'', '', 'tt_content.list_type');
+
 				if (count($items) > 0) {
-					$content .= '<td class="cell typo3-message message-ok">' . $GLOBALS['LANG']->getLL('yes') . '</td>';
+					$content .= '<td class="cell typo3-message message-ok">' . $GLOBALS['LANG']->getLL('yes') . ' (' . count($items) . ')</td>';
+				} else {
+					$content .= '<td class="cell typo3-message message-error">' . $GLOBALS['LANG']->getLL('no') . '</td>';
+				}
+				if (count($itemsHidden) > 0) {
+					$content .= '<td class="cell typo3-message message-ok">' . $GLOBALS['LANG']->getLL('yes') . ' (' . count($itemsHidden) . ')</td>';
+				} else {
+					$content .= '<td class="cell typo3-message message-error">' . $GLOBALS['LANG']->getLL('no') . '</td>';
+				}
+				if (count($itemsDeleted) > 0) {
+					$content .= '<td class="cell typo3-message message-ok">' . $GLOBALS['LANG']->getLL('yes') . ' (' . count($itemsDeleted) . ')</td>';
 				} else {
 					$content .= '<td class="cell typo3-message message-error">' . $GLOBALS['LANG']->getLL('no') . '</td>';
 				}
@@ -1012,7 +832,7 @@ class tx_additionalreports_main
 		return $content;
 	}
 
-	public function getAllUsedPlugins($displayHidden = false) {
+	public function getAllUsedPlugins($displayHidden = FALSE) {
 		$plugins = array();
 		foreach ($GLOBALS['TCA']['tt_content']['columns']['list_type']['config']['items'] as $itemKey => $itemValue) {
 			if (trim($itemValue[1]) != '') {
@@ -1021,43 +841,44 @@ class tx_additionalreports_main
 		}
 		// addWhere
 		$addWhere = '';
-		$addhidden = ($displayHidden === true) ? '' : ' AND tt_content.hidden=0 AND pages.hidden=0 ';
+		$addhidden = ($displayHidden === TRUE) ? '' : ' AND tt_content.hidden=0 AND pages.hidden=0 ';
 
 		// Plugin list for the select box
 		$getFiltersCat = t3lib_div::_GP('filtersCat');
 		$pluginsList = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
 			'DISTINCT tt_content.list_type',
 			'tt_content,pages',
-			'tt_content.pid=pages.uid AND pages.pid>=0 AND tt_content.deleted=0 AND pages.deleted=0 ' . $addhidden . 'AND tt_content.CType=\'list\'',
+				'tt_content.pid=pages.uid AND pages.pid>=0 AND tt_content.deleted=0 AND pages.deleted=0 ' . $addhidden . 'AND tt_content.CType=\'list\'',
 			'',
 			'tt_content.list_type'
 		);
 		$this->filtersCat .= '<option value="all">' . $GLOBALS['LANG']->getLL('all') . '</option>';
 		foreach ($pluginsList as $pluginsElement) {
-			if (($getFiltersCat == $pluginsElement['list_type']) && ($getFiltersCat !== null)) {
+			if (($getFiltersCat == $pluginsElement['list_type']) && ($getFiltersCat !== NULL)) {
 				$this->filtersCat .= '<option value="' . $pluginsElement['list_type'] . '" selected="selected">' . $pluginsElement['list_type'] . '</option>';
 				$addWhere = ' AND tt_content.list_type=\'' . $pluginsElement['list_type'] . '\'';
 			} else {
 				$this->filtersCat .= '<option value="' . $pluginsElement['list_type'] . '">' . $pluginsElement['list_type'] . '</option>';
 			}
 		}
+
 		// All items
 		$items = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
 			'DISTINCT tt_content.list_type,tt_content.pid,tt_content.uid,pages.title,pages.hidden as "hiddenpages",tt_content.hidden as "hiddentt_content"',
 			'tt_content,pages',
-			'tt_content.pid=pages.uid AND pages.pid>=0 AND tt_content.deleted=0 AND pages.deleted=0 ' . $addhidden . 'AND tt_content.CType=\'list\'' . $addWhere,
+				'tt_content.pid=pages.uid AND pages.pid>=0 AND tt_content.deleted=0 AND pages.deleted=0 ' . $addhidden . 'AND tt_content.CType=\'list\'' . $addWhere,
 			'',
 			'tt_content.list_type,tt_content.pid'
 		);
 		// Page browser
 		$pointer = t3lib_div::_GP('pointer');
-		$limit = ($pointer !== null) ? $pointer . ',' . $this->nbElementsPerPage : '0,' . $this->nbElementsPerPage;
-		$current = ($pointer !== null) ? intval($pointer) : 0;
+		$limit = ($pointer !== NULL) ? $pointer . ',' . $this->nbElementsPerPage : '0,' . $this->nbElementsPerPage;
+		$current = ($pointer !== NULL) ? intval($pointer) : 0;
 		$pageBrowser = self::pluginsRenderListNavigation(count($items), $this->nbElementsPerPage, $current);
 		$itemsBrowser = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
 			'DISTINCT tt_content.list_type,tt_content.pid,tt_content.uid,pages.title,pages.hidden as "hiddenpages",tt_content.hidden as "hiddentt_content"',
 			'tt_content,pages',
-			'tt_content.pid=pages.uid AND pages.pid>=0 AND tt_content.deleted=0 AND pages.deleted=0 ' . $addhidden . 'AND tt_content.CType=\'list\'' . $addWhere,
+				'tt_content.pid=pages.uid AND pages.pid>=0 AND tt_content.deleted=0 AND pages.deleted=0 ' . $addhidden . 'AND tt_content.CType=\'list\'' . $addWhere,
 			'',
 			'tt_content.list_type,tt_content.pid',
 			$limit
@@ -1084,8 +905,8 @@ class tx_additionalreports_main
 			$content .= '<td class="cell" align="center">Page TV</td>';
 			$content .= '<td class="cell" align="center">' . $GLOBALS['LANG']->getLL('tvused') . '</td>';
 		} else {
-			$content .= '<td class="cell" align="center">Page</td>';
 			$content .= '<td class="cell" align="center">DB mode</td>';
+			$content .= '<td class="cell" align="center">Page</td>';
 		}
 		$content .= '<td class="cell" align="center">' . $GLOBALS['LANG']->getLL('preview') . '</td>';
 		$content .= '</tr>';
@@ -1093,7 +914,7 @@ class tx_additionalreports_main
 			preg_match('/EXT:(.*?)\//', $plugins[$itemValue['list_type']][0], $ext);
 			preg_match('/^LLL:(EXT:.*?):(.*)/', $plugins[$itemValue['list_type']][0], $llfile);
 			$LOCAL_LANG = t3lib_div::readLLfile($llfile[1], $GLOBALS['LANG']->lang);
-
+			require_once(PATH_t3lib . "class.t3lib_page.php");
 			$pageSelect = t3lib_div::makeInstance('t3lib_pageSelect');
 			$rootLine = $pageSelect->getRootLine($itemValue['pid']);
 			$domain = t3lib_BEfunc::firstDomainRecord($rootLine);
@@ -1126,26 +947,26 @@ class tx_additionalreports_main
 
 			if (t3lib_extMgm::isLoaded('templavoila') && class_exists('tx_templavoila_api')) {
 				$content .= '<td class="cell" align="center">';
-				$content .= '<a href="#" onclick="' . self::goToModuleList($itemValue['pid']) . '" title="' . $GLOBALS['LANG']->getLL('switch') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/gfx/zoom.gif"/></span></a>';
-				$content .= '<a target="_blank" href="' . self::goToModuleList($itemValue['pid'], TRUE) . '" title="' . $GLOBALS['LANG']->getLL('newwindow') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/gfx/zoom.gif"/></span></a>';
+				$content .= '<a href="#" onclick="' . tx_additionalreports_util::goToModuleList($itemValue['pid']) . '" title="' . $GLOBALS['LANG']->getLL('switch') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/module_web_list.gif"/></span></a>';
+				$content .= '<a target="_blank" href="' . tx_additionalreports_util::goToModuleList($itemValue['pid'], TRUE) . '" title="' . $GLOBALS['LANG']->getLL('newwindow') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/module_web_list.gif"/></span></a>';
 				$content .= '</td>';
 				$content .= '<td class="cell" align="center">';
-				$content .= '<a href="#" onclick="' . self::goToModulePageTV($itemValue['pid']) . '" title="' . $GLOBALS['LANG']->getLL('switch') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/gfx/zoom.gif"/></span></a>';
-				$content .= '<a target="_blank" href="' . self::goToModulePageTV($itemValue['pid'], TRUE) . '" title="' . $GLOBALS['LANG']->getLL('newwindow') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/gfx/zoom.gif"/></span></a>';
+				$content .= '<a href="#" onclick="' . tx_additionalreports_util::goToModulePageTV($itemValue['pid']) . '" title="' . $GLOBALS['LANG']->getLL('switch') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/module_web_layout.gif"/></span></a>';
+				$content .= '<a target="_blank" href="' . tx_additionalreports_util::goToModulePageTV($itemValue['pid'], TRUE) . '" title="' . $GLOBALS['LANG']->getLL('newwindow') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/module_web_layout.gif"/></span></a>';
 				$content .= '</td>';
-				if (self::isUsedInTV($itemValue['uid'], $itemValue['pid'])) {
+				if (tx_additionalreports_util::isUsedInTV($itemValue['uid'], $itemValue['pid'])) {
 					$content .= '<td class="cell typo3-message message-ok">' . $GLOBALS['LANG']->getLL('yes') . '</td>';
 				} else {
 					$content .= '<td class="cell typo3-message message-error">' . $GLOBALS['LANG']->getLL('no') . '</td>';
 				}
 			} else {
 				$content .= '<td class="cell" align="center">';
-				$content .= '<a href="#" onclick="' . self::goToModuleList($itemValue['pid']) . '" title="' . $GLOBALS['LANG']->getLL('switch') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/gfx/zoom.gif"/></span></a>';
-				$content .= '<a target="_blank" href="' . self::goToModuleList($itemValue['pid'], TRUE) . '" title="' . $GLOBALS['LANG']->getLL('newwindow') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/gfx/zoom.gif"/></span></a>';
+				$content .= '<a href="#" onclick="' . tx_additionalreports_util::goToModuleList($itemValue['pid']) . '" title="' . $GLOBALS['LANG']->getLL('switch') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/module_web_list.gif"/></span></a>';
+				$content .= '<a target="_blank" href="' . tx_additionalreports_util::goToModuleList($itemValue['pid'], TRUE) . '" title="' . $GLOBALS['LANG']->getLL('newwindow') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/module_web_list.gif"/></span></a>';
 				$content .= '</td>';
 				$content .= '<td class="cell" align="center">';
-				$content .= '<a href="#" onclick="' . self::goToModulePage($itemValue['pid']) . '" title="' . $GLOBALS['LANG']->getLL('switch') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/gfx/zoom.gif"/></span></a>';
-				$content .= '<a target="_blank" href="' . self::goToModulePage($itemValue['pid'], TRUE) . '" title="' . $GLOBALS['LANG']->getLL('newwindow') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/gfx/zoom.gif"/></span></a>';
+				$content .= '<a href="#" onclick="' . tx_additionalreports_util::goToModulePage($itemValue['pid']) . '" title="' . $GLOBALS['LANG']->getLL('switch') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/module_web_layout.gif"/></span></a>';
+				$content .= '<a target="_blank" href="' . tx_additionalreports_util::goToModulePage($itemValue['pid'], TRUE) . '" title="' . $GLOBALS['LANG']->getLL('newwindow') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/module_web_layout.gif"/></span></a>';
 				$content .= '</td>';
 			}
 			$content .= '<td class="cell" align="center"><a target="_blank" href="http://' . $domain . '/index.php?id=' . $itemValue['pid'] . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/gfx/zoom.gif"/></a></td>';
@@ -1155,48 +976,24 @@ class tx_additionalreports_main
 		return $content;
 	}
 
-	public function goToModuleList($uid, $urlOnly = FALSE) {
-		$url = t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'db_list.php?id=' . $uid;
-		if ($urlOnly === TRUE) {
-			return $url;
-		} else {
-			return 'top.nextLoadModuleUrl=\'' . $url . '\';top.goToModule(\'web_list\');';
-		}
-	}
-
-	public function goToModulePage($uid, $urlOnly = FALSE) {
-		$url = t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/cms/layout/db_layout.php?id=' . $uid;
-		if ($urlOnly === TRUE) {
-			return $url;
-		} else {
-			return 'top.nextLoadModuleUrl=\'' . $url . '\';top.goToModule(\'web_layout\');';
-		}
-	}
-
-	public function goToModulePageTV($uid, $urlOnly = FALSE) {
-		$url = t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . '../typo3conf/ext/templavoila/mod1/index.php?id=' . $uid;
-		if ($urlOnly === TRUE) {
-			return $url;
-		} else {
-			return 'top.nextLoadModuleUrl=\'' . $url . '\';top.goToModule(\'web_txtemplavoilaM1\');';
-		}
-	}
 
 	public function getAllCType() {
 		$content = '';
 		$content .= '<table cellspacing="1" cellpadding="2" border="0" class="tx_sv_reportlist typo3-dblist">';
-		$content .= '<tr class="t3-row-header"><td colspan="3">';
+		$content .= '<tr class="t3-row-header"><td colspan="5">';
 		$content .= $GLOBALS['LANG']->getLL('pluginsmode2');
 		$content .= '</td></tr>';
 		$content .= '<tr class="c-headLine">';
 		$content .= '<td class="cell">&nbsp;</td>';
 		$content .= '<td class="cell">' . $GLOBALS['LANG']->getLL('ctype') . '</td>';
 		$content .= '<td class="cell">' . $GLOBALS['LANG']->getLL('used') . '</td>';
+		$content .= '<td class="cell">' . $GLOBALS['LANG']->getLL('used') . ' (hidden=1)</td>';
+		$content .= '<td class="cell">' . $GLOBALS['LANG']->getLL('used') . ' (deleted=1)</td>';
 		$content .= '</tr>';
 
 		foreach ($GLOBALS['TCA']['tt_content']['columns']['CType']['config']['items'] as $itemKey => $itemValue) {
 			if ($itemValue[1] != '--div--') {
-				$temp = null;
+				$temp = NULL;
 				preg_match('/^LLL:(EXT:.*?):(.*)/', $itemValue[0], $llfile);
 				$LOCAL_LANG = t3lib_div::readLLfile($llfile[1], $GLOBALS['LANG']->lang);
 				$content .= '<tr class="db_list_normal">';
@@ -1214,9 +1011,21 @@ class tx_additionalreports_main
 				$content .= '<td class="cell">' . $GLOBALS['LANG']->getLLL($llfile[2], $LOCAL_LANG) . ' (' . $itemValue[1] . ')</td>';
 
 				$items = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows('DISTINCT tt_content.CType,tt_content.pid,pages.title', 'tt_content,pages', 'tt_content.pid=pages.uid AND tt_content.hidden=0 AND tt_content.deleted=0 AND pages.hidden=0 AND pages.deleted=0 AND tt_content.CType=\'' . $itemValue[1] . '\'', '', 'tt_content.CType');
+				$itemsHidden = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows('DISTINCT tt_content.CType,tt_content.pid,pages.title', 'tt_content,pages', 'tt_content.pid=pages.uid AND (tt_content.hidden=1 OR pages.hidden=0) AND tt_content.CType=\'' . $itemValue[1] . '\'', '', 'tt_content.CType');
+				$itemsDeleted = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows('DISTINCT tt_content.CType,tt_content.pid,pages.title', 'tt_content,pages', 'tt_content.pid=pages.uid AND (tt_content.deleted=1 OR pages.deleted=1) AND tt_content.CType=\'' . $itemValue[1] . '\'', '', 'tt_content.CType');
 
 				if (count($items) > 0) {
-					$content .= '<td class="cell typo3-message message-ok">' . $GLOBALS['LANG']->getLL('yes') . '</td>';
+					$content .= '<td class="cell typo3-message message-ok">' . $GLOBALS['LANG']->getLL('yes') . ' (' . count($items) . ')</td>';
+				} else {
+					$content .= '<td class="cell typo3-message message-error">' . $GLOBALS['LANG']->getLL('no') . '</td>';
+				}
+				if (count($itemsHidden) > 0) {
+					$content .= '<td class="cell typo3-message message-ok">' . $GLOBALS['LANG']->getLL('yes') . ' (' . count($itemsHidden) . ')</td>';
+				} else {
+					$content .= '<td class="cell typo3-message message-error">' . $GLOBALS['LANG']->getLL('no') . '</td>';
+				}
+				if (count($itemsDeleted) > 0) {
+					$content .= '<td class="cell typo3-message message-ok">' . $GLOBALS['LANG']->getLL('yes') . ' (' . count($itemsDeleted) . ')</td>';
 				} else {
 					$content .= '<td class="cell typo3-message message-error">' . $GLOBALS['LANG']->getLL('no') . '</td>';
 				}
@@ -1228,7 +1037,7 @@ class tx_additionalreports_main
 		return $content;
 	}
 
-	public function getAllUsedCType($displayHidden = false) {
+	public function getAllUsedCType($displayHidden = FALSE) {
 		$ctypes = array();
 		foreach ($GLOBALS['TCA']['tt_content']['columns']['CType']['config']['items'] as $itemKey => $itemValue) {
 			if ($itemValue[1] != '--div--') {
@@ -1238,20 +1047,20 @@ class tx_additionalreports_main
 
 		// addWhere
 		$addWhere = '';
-		$addhidden = ($displayHidden === true) ? '' : ' AND tt_content.hidden=0 AND pages.hidden=0 ';
+		$addhidden = ($displayHidden === TRUE) ? '' : ' AND tt_content.hidden=0 AND pages.hidden=0 ';
 
 		// Plugin list for the select box
 		$getFiltersCat = t3lib_div::_GP('filtersCat');
 		$pluginsList = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
 			'DISTINCT tt_content.CType',
 			'tt_content,pages',
-			'tt_content.pid=pages.uid AND pages.pid>=0 AND tt_content.deleted=0 AND pages.deleted=0 ' . $addhidden . 'AND tt_content.CType<>\'list\'',
+				'tt_content.pid=pages.uid AND pages.pid>=0 AND tt_content.deleted=0 AND pages.deleted=0 ' . $addhidden . 'AND tt_content.CType<>\'list\'',
 			'',
 			'tt_content.list_type'
 		);
 		$this->filtersCat .= '<option value="all">' . $GLOBALS['LANG']->getLL('all') . '</option>';
 		foreach ($pluginsList as $pluginsElement) {
-			if (($getFiltersCat == $pluginsElement['CType']) && ($getFiltersCat !== null)) {
+			if (($getFiltersCat == $pluginsElement['CType']) && ($getFiltersCat !== NULL)) {
 				$this->filtersCat .= '<option value="' . $pluginsElement['CType'] . '" selected="selected">' . $pluginsElement['CType'] . '</option>';
 				$addWhere = ' AND tt_content.CType=\'' . $pluginsElement['CType'] . '\'';
 			} else {
@@ -1263,19 +1072,19 @@ class tx_additionalreports_main
 		$items = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
 			'DISTINCT tt_content.CType,tt_content.pid,tt_content.uid,pages.title,pages.hidden as "hiddenpages",tt_content.hidden as "hiddentt_content"',
 			'tt_content,pages',
-			'tt_content.pid=pages.uid AND pages.pid>=0 AND tt_content.deleted=0 AND pages.deleted=0 ' . $addhidden . 'AND tt_content.CType<>\'list\'' . $addWhere,
+				'tt_content.pid=pages.uid AND pages.pid>=0 AND tt_content.deleted=0 AND pages.deleted=0 ' . $addhidden . 'AND tt_content.CType<>\'list\'' . $addWhere,
 			'',
 			'tt_content.CType,tt_content.pid'
 		);
 		// Page browser
 		$pointer = t3lib_div::_GP('pointer');
-		$limit = ($pointer !== null) ? $pointer . ',' . $this->nbElementsPerPage : '0,' . $this->nbElementsPerPage;
-		$current = ($pointer !== null) ? intval($pointer) : 0;
+		$limit = ($pointer !== NULL) ? $pointer . ',' . $this->nbElementsPerPage : '0,' . $this->nbElementsPerPage;
+		$current = ($pointer !== NULL) ? intval($pointer) : 0;
 		$pageBrowser = self::pluginsRenderListNavigation(count($items), $this->nbElementsPerPage, $current);
 		$itemsBrowser = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
 			'DISTINCT tt_content.CType,tt_content.pid,tt_content.uid,pages.title,pages.hidden as "hiddenpages",tt_content.hidden as "hiddentt_content"',
 			'tt_content,pages',
-			'tt_content.pid=pages.uid AND pages.pid>=0 AND tt_content.deleted=0 AND pages.deleted=0 ' . $addhidden . 'AND tt_content.CType<>\'list\'' . $addWhere,
+				'tt_content.pid=pages.uid AND pages.pid>=0 AND tt_content.deleted=0 AND pages.deleted=0 ' . $addhidden . 'AND tt_content.CType<>\'list\'' . $addWhere,
 			'',
 			'tt_content.CType,tt_content.pid',
 			$limit
@@ -1301,8 +1110,8 @@ class tx_additionalreports_main
 			$content .= '<td class="cell" align="center">Page TV</td>';
 			$content .= '<td class="cell" align="center">' . $GLOBALS['LANG']->getLL('tvused') . '</td>';
 		} else {
-			$content .= '<td class="cell" align="center">Page</td>';
 			$content .= '<td class="cell" align="center">DB mode</td>';
+			$content .= '<td class="cell" align="center">Page</td>';
 		}
 		$content .= '<td class="cell" align="center">' . $GLOBALS['LANG']->getLL('preview') . '</td>';
 		$content .= '</tr>';
@@ -1310,7 +1119,7 @@ class tx_additionalreports_main
 			$temp = NULL;
 			preg_match('/^LLL:(EXT:.*?):(.*)/', $ctypes[$itemValue['CType']][0], $llfile);
 			$LOCAL_LANG = t3lib_div::readLLfile($llfile[1], $GLOBALS['LANG']->lang);
-
+			require_once(PATH_t3lib . "class.t3lib_page.php");
 			$pageSelect = t3lib_div::makeInstance('t3lib_pageSelect');
 			$rootLine = $pageSelect->getRootLine($itemValue['pid']);
 			$domain = t3lib_BEfunc::firstDomainRecord($rootLine);
@@ -1343,26 +1152,26 @@ class tx_additionalreports_main
 			$content .= '<td class="cell">' . $itemValue['title'] . '</td>';
 			if (t3lib_extMgm::isLoaded('templavoila') && class_exists('tx_templavoila_api')) {
 				$content .= '<td class="cell" align="center">';
-				$content .= '<a href="#" onclick="' . self::goToModuleList($itemValue['pid']) . '" title="' . $GLOBALS['LANG']->getLL('switch') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/gfx/zoom.gif"/></span></a>';
-				$content .= '<a target="_blank" href="' . self::goToModuleList($itemValue['pid'], TRUE) . '" title="' . $GLOBALS['LANG']->getLL('newwindow') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/gfx/zoom.gif"/></span></a>';
+				$content .= '<a href="#" onclick="' . tx_additionalreports_util::goToModuleList($itemValue['pid']) . '" title="' . $GLOBALS['LANG']->getLL('switch') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/module_web_list.gif"/></span></a>';
+				$content .= '<a target="_blank" href="' . tx_additionalreports_util::goToModuleList($itemValue['pid'], TRUE) . '" title="' . $GLOBALS['LANG']->getLL('newwindow') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/module_web_list.gif"/></span></a>';
 				$content .= '</td>';
 				$content .= '<td class="cell" align="center">';
-				$content .= '<a href="#" onclick="' . self::goToModulePageTV($itemValue['pid']) . '" title="' . $GLOBALS['LANG']->getLL('switch') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/gfx/zoom.gif"/></span></a>';
-				$content .= '<a target="_blank" href="' . self::goToModulePageTV($itemValue['pid'], TRUE) . '" title="' . $GLOBALS['LANG']->getLL('newwindow') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/gfx/zoom.gif"/></span></a>';
+				$content .= '<a href="#" onclick="' . tx_additionalreports_util::goToModulePageTV($itemValue['pid']) . '" title="' . $GLOBALS['LANG']->getLL('switch') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/module_web_layout.gif"/></span></a>';
+				$content .= '<a target="_blank" href="' . tx_additionalreports_util::goToModulePageTV($itemValue['pid'], TRUE) . '" title="' . $GLOBALS['LANG']->getLL('newwindow') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/module_web_layout.gif"/></span></a>';
 				$content .= '</td>';
-				if (self::isUsedInTV($itemValue['uid'], $itemValue['pid'])) {
+				if (tx_additionalreports_util::isUsedInTV($itemValue['uid'], $itemValue['pid'])) {
 					$content .= '<td class="cell typo3-message message-ok">' . $GLOBALS['LANG']->getLL('yes') . '</td>';
 				} else {
 					$content .= '<td class="cell typo3-message message-error">' . $GLOBALS['LANG']->getLL('no') . '</td>';
 				}
 			} else {
 				$content .= '<td class="cell" align="center">';
-				$content .= '<a href="#" onclick="' . self::goToModuleList($itemValue['pid']) . '" title="' . $GLOBALS['LANG']->getLL('switch') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/gfx/zoom.gif"/></span></a>';
-				$content .= '<a target="_blank" href="' . self::goToModuleList($itemValue['pid'], TRUE) . '" title="' . $GLOBALS['LANG']->getLL('newwindow') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/gfx/zoom.gif"/></span></a>';
+				$content .= '<a href="#" onclick="' . tx_additionalreports_util::goToModuleList($itemValue['pid']) . '" title="' . $GLOBALS['LANG']->getLL('switch') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/module_web_list.gif"/></span></a>';
+				$content .= '<a target="_blank" href="' . tx_additionalreports_util::goToModuleList($itemValue['pid'], TRUE) . '" title="' . $GLOBALS['LANG']->getLL('newwindow') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/module_web_list.gif"/></span></a>';
 				$content .= '</td>';
 				$content .= '<td class="cell" align="center">';
-				$content .= '<a href="#" onclick="' . self::goToModulePage($itemValue['pid']) . '" title="' . $GLOBALS['LANG']->getLL('switch') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/gfx/zoom.gif"/></span></a>';
-				$content .= '<a target="_blank" href="' . self::goToModulePage($itemValue['pid'], TRUE) . '" title="' . $GLOBALS['LANG']->getLL('newwindow') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/gfx/zoom.gif"/></span></a>';
+				$content .= '<a href="#" onclick="' . tx_additionalreports_util::goToModulePage($itemValue['pid']) . '" title="' . $GLOBALS['LANG']->getLL('switch') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/module_web_layout.gif"/></span></a>';
+				$content .= '<a target="_blank" href="' . tx_additionalreports_util::goToModulePage($itemValue['pid'], TRUE) . '" title="' . $GLOBALS['LANG']->getLL('newwindow') . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/module_web_layout.gif"/></span></a>';
 				$content .= '</td>';
 			}
 			$content .= '<td class="cell" align="center"><a target="_blank" href="http://' . $domain . '/index.php?id=' . $itemValue['pid'] . '"><img src="' . t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'sysext/t3skin/icons/gfx/zoom.gif"/></a></td>';
@@ -1437,17 +1246,6 @@ class tx_additionalreports_main
 		return $content;
 	}
 
-	function isUsedInTV($uid, $pid) {
-		$apiObj = t3lib_div::makeInstance('tx_templavoila_api', 'pages');
-		$rootElementRecord = t3lib_BEfunc::getRecordWSOL('pages', $pid, '*');
-		$contentTreeData = $apiObj->getContentTree('pages', $rootElementRecord);
-		$usedUids = array_keys($contentTreeData['contentElementUsage']);
-		if (t3lib_div::inList(implode(',', $usedUids), $uid)) {
-			return true;
-		} else {
-			return false;
-		}
-	}
 
 	/**
 	 * Creates a page browser for tables with many records
@@ -1465,11 +1263,11 @@ class tx_additionalreports_main
 			$listURL = $this->baseURL . '&display=' . $this->display;
 			$listURL .= '&nbPerPage=' . $this->nbElementsPerPage;
 			$getFiltersCat = t3lib_div::_GP('filtersCat');
-			if ($getFiltersCat !== null) {
+			if ($getFiltersCat !== NULL) {
 				$listURL .= '&filtersCat=' . $getFiltersCat;
 			}
 			$orderby = t3lib_div::_GP('orderby');
-			if ($orderby !== null) {
+			if ($orderby !== NULL) {
 				$listURL .= '&orderby=' . $orderby;
 			}
 			$currentPage = floor(($firstElementNumber + 1) / $iLimit) + 1;
@@ -1504,8 +1302,8 @@ class tx_additionalreports_main
 
 			$pageNumberInput = '<span>' . $currentPage . '</span>';
 			$pageIndicator = '<span class="pageIndicator">'
-			                 . sprintf($GLOBALS['LANG']->getLL('pageIndicator'), $pageNumberInput, $totalPages)
-			                 . '</span>';
+					. sprintf($GLOBALS['LANG']->getLL('pageIndicator'), $pageNumberInput, $totalPages)
+					. '</span>';
 
 			if ($totalItems > ($firstElementNumber + $iLimit)) {
 				$lastElementNumber = $firstElementNumber + $iLimit;
@@ -1514,12 +1312,12 @@ class tx_additionalreports_main
 			}
 
 			$rangeIndicator = '<span class="pageIndicator">'
-			                  . sprintf($GLOBALS['LANG']->getLL('rangeIndicator'), $firstElementNumber + 1, $lastElementNumber) . ' / ' . $totalItems
-			                  . '</span>';
+					. sprintf($GLOBALS['LANG']->getLL('rangeIndicator'), $firstElementNumber + 1, $lastElementNumber) . ' / ' . $totalItems
+					. '</span>';
 			// nb per page, filter and reload
 			$reload = '<input type="text" name="nbPerPage" id="nbPerPage" size="5" value="' . $this->nbElementsPerPage . '"/> / page ';
 
-			if ($getFiltersCat !== null) {
+			if ($getFiltersCat !== NULL) {
 				$reload .= '<a href="#"  onClick="jumpToUrl(\'' . $listURLOrig . '&nbPerPage=\'+document.getElementById(\'nbPerPage\').value+\'&filtersCat=' . $getFiltersCat . '\');">';
 			} else {
 				$reload .= '<a href="#"  onClick="jumpToUrl(\'' . $listURLOrig . '&nbPerPage=\'+document.getElementById(\'nbPerPage\').value);">';
@@ -1534,20 +1332,20 @@ class tx_additionalreports_main
 			}
 
 			$content .= '<div id="typo3-dblist-pagination">'
-			            . $first . $previous
-			            . '<span class="bar">&nbsp;</span>'
-			            . $rangeIndicator . '<span class="bar">&nbsp;</span>'
-			            . $pageIndicator . '<span class="bar">&nbsp;</span>'
-			            . $next . $last . '<span class="bar">&nbsp;</span>'
-			            . $reload
-			            . '</div>';
+					. $first . $previous
+					. '<span class="bar">&nbsp;</span>'
+					. $rangeIndicator . '<span class="bar">&nbsp;</span>'
+					. $pageIndicator . '<span class="bar">&nbsp;</span>'
+					. $next . $last . '<span class="bar">&nbsp;</span>'
+					. $reload
+					. '</div>';
 
 			$returnContent = $content;
 		} // end of if pages > 1
 		return $returnContent;
 	}
 
-	public function getRealUrlErrors() {
+	public function displayRealUrlErrors() {
 		$cmd = t3lib_div::_GP('cmd');
 		if ($cmd === 'deleteAll') {
 			$GLOBALS['TYPO3_DB']->exec_DELETEquery(
@@ -1559,7 +1357,7 @@ class tx_additionalreports_main
 			$delete = t3lib_div::_GP('delete');
 			$GLOBALS['TYPO3_DB']->exec_DELETEquery(
 				'tx_realurl_errorlog',
-				'url_hash=' . mysql_real_escape_string($delete)
+					'url_hash=' . mysql_real_escape_string($delete)
 			);
 		}
 
@@ -1584,8 +1382,8 @@ class tx_additionalreports_main
 
 		// Page browser
 		$pointer = t3lib_div::_GP('pointer');
-		$limit = ($pointer !== null) ? $pointer . ',' . $this->nbElementsPerPage : '0,' . $this->nbElementsPerPage;
-		$current = ($pointer !== null) ? intval($pointer) : 0;
+		$limit = ($pointer !== NULL) ? $pointer . ',' . $this->nbElementsPerPage : '0,' . $this->nbElementsPerPage;
+		$current = ($pointer !== NULL) ? intval($pointer) : 0;
 		$pageBrowser = self::pluginsRenderListNavigation(count($items), $this->nbElementsPerPage, $current);
 		$itemsBrowser = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
 			$query['SELECT'],
@@ -1638,11 +1436,11 @@ class tx_additionalreports_main
 		return $content;
 	}
 
-	public function getLogErrors() {
+	public function displayLogErrors() {
 
 		// query
 		$query = array();
-		$query['SELECT'] = 'COUNT(*) AS "nb",details,tstamp';
+		$query['SELECT'] = 'COUNT(*) AS "nb",details,MAX(tstamp) as "tstamp"';
 		$query['FROM'] = 'sys_log';
 		$query['WHERE'] = 'error>0';
 		$query['GROUPBY'] = 'details';
@@ -1666,8 +1464,8 @@ class tx_additionalreports_main
 
 		// Page browser
 		$pointer = t3lib_div::_GP('pointer');
-		$limit = ($pointer !== null) ? $pointer . ',' . $this->nbElementsPerPage : '0,' . $this->nbElementsPerPage;
-		$current = ($pointer !== null) ? intval($pointer) : 0;
+		$limit = ($pointer !== NULL) ? $pointer . ',' . $this->nbElementsPerPage : '0,' . $this->nbElementsPerPage;
+		$current = ($pointer !== NULL) ? intval($pointer) : 0;
 		$pageBrowser = self::pluginsRenderListNavigation(count($items), $this->nbElementsPerPage, $current);
 		$itemsBrowser = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
 			$query['SELECT'],
@@ -1745,7 +1543,7 @@ class tx_additionalreports_main
 				$domainRecords = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
 					'uid, pid, domainName',
 					'sys_domain',
-					'pid IN(' . $itemValue['uid'] . ') AND hidden=0',
+						'pid IN(' . $itemValue['uid'] . ') AND hidden=0',
 					'',
 					'sorting'
 				);
@@ -1760,7 +1558,7 @@ class tx_additionalreports_main
 				$templates = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
 					'uid,title,root',
 					'sys_template',
-					'pid IN(' . $itemValue['uid'] . ') AND deleted=0 AND hidden=0',
+						'pid IN(' . $itemValue['uid'] . ') AND deleted=0 AND hidden=0',
 					'',
 					'sorting'
 				);
@@ -1772,6 +1570,7 @@ class tx_additionalreports_main
 				$tmpl = t3lib_div::makeInstance("t3lib_tsparser_ext");
 				$tmpl->tt_track = 0;
 				$tmpl->init();
+				require_once(PATH_t3lib . "class.t3lib_page.php");
 				$sys_page = t3lib_div::makeInstance("t3lib_pageSelect");
 				$rootLine = $sys_page->getRootLine($itemValue['uid']);
 				$tmpl->runThroughTemplates($rootLine, 0);
@@ -1779,11 +1578,11 @@ class tx_additionalreports_main
 				$content .= '<td class="cell">' . $tmpl->setup['config.']['baseURL'] . '</td>';
 
 				// count pages
-				$list = self::getTreeList($itemValue['uid'], 99, 0, '1=1');
+				$list = tx_additionalreports_util::getTreeList($itemValue['uid'], 99, 0, '1=1');
 				$listArray = explode(',', $list);
 				$content .= '<td class="cell" align="center">' . (count($listArray) - 1) . '</td>';
-				$content .= '<td class="cell" align="center">' . (self::getCountPagesUids($list, 'hidden=1')) . '</td>';
-				$content .= '<td class="cell" align="center">' . (self::getCountPagesUids($list, 'no_search=1')) . '</td>';
+				$content .= '<td class="cell" align="center">' . (tx_additionalreports_util::getCountPagesUids($list, 'hidden=1')) . '</td>';
+				$content .= '<td class="cell" align="center">' . (tx_additionalreports_util::getCountPagesUids($list, 'no_search=1')) . '</td>';
 
 				$content .= '</tr>';
 			}
@@ -1792,39 +1591,45 @@ class tx_additionalreports_main
 		return $content;
 	}
 
-	public function getCountPagesUids($listOfUids, $where = '1=1') {
-		$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery('uid', 'pages', 'uid IN (' . $listOfUids . ') AND ' . $where);
-		$count = $GLOBALS['TYPO3_DB']->sql_num_rows($res);
-		$GLOBALS['TYPO3_DB']->sql_free_result($res);
-		return $count;
-	}
+	public function displayDbCheck() {
+		$sqlStatements = tx_additionalreports_util::getSqlUpdateStatements();
+		$content = '';
+		$items = $sqlStatements['update'];
+		$content .= '<table cellspacing="1" cellpadding="2" border="0" class="tx_sv_reportlist typo3-dblist">';
+		$content .= '<tr class="t3-row-header"><td colspan="7">';
+		$content .= 'UPDATE :';
+		$content .= '</td></tr>';
+		if (count($items) > 0) {
+			foreach ($items as $itemKey => $itemValue) {
+				$content .= '<tr class="db_list_normal">';
+				$content .= '<td class="cell">' . $itemKey . '</td>';
+				$content .= '<td class="cell">' . tx_additionalreports_util::view_array($itemValue) . '</td>';
+				$content .= '</tr>';
 
-	public function getTreeList($id, $depth, $begin = 0, $perms_clause) {
-		$depth = intval($depth);
-		$begin = intval($begin);
-		$id = intval($id);
-		if ($begin == 0) {
-			$theList = $id;
-		} else {
-			$theList = '';
-		}
-		if ($id && $depth > 0) {
-			$res = $GLOBALS['TYPO3_DB']->exec_SELECTquery(
-				'uid',
-				'pages',
-				'pid=' . $id . ' ' . t3lib_BEfunc::deleteClause('pages') . ' AND ' . $perms_clause
-			);
-			while ($row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res)) {
-				if ($begin <= 0) {
-					$theList .= ',' . $row['uid'];
-				}
-				if ($depth > 1) {
-					$theList .= self::getTreeList($row['uid'], $depth - 1, $begin - 1, $perms_clause);
-				}
 			}
-			$GLOBALS['TYPO3_DB']->sql_free_result($res);
+		} else {
+			$content .= '<tr class="db_list_normal" colspan="5"><td class="cell">' . $GLOBALS['LANG']->getLL('noresults') . '</td></tr>';
 		}
-		return $theList;
+		$content .= '</table>';
+		$items = $sqlStatements['remove'];
+		$content .= '<table cellspacing="1" cellpadding="2" border="0" class="tx_sv_reportlist typo3-dblist">';
+		$content .= '<tr class="t3-row-header"><td colspan="7">';
+		$content .= 'REMOVE :';
+		$content .= '</td></tr>';
+		if (count($items) > 0) {
+			foreach ($items as $itemKey => $itemValue) {
+				$content .= '<tr class="db_list_normal">';
+				$content .= '<td class="cell">' . $itemKey . '</td>';
+				$content .= '<td class="cell">' . tx_additionalreports_util::view_array($itemValue) . '</td>';
+				$content .= '</tr>';
+
+			}
+		} else {
+			$content .= '<tr class="db_list_normal" colspan="5"><td class="cell">' . $GLOBALS['LANG']->getLL('noresults') . '</td></tr>';
+		}
+		$content .= '</table>';
+		return $content;
+
 	}
 
 }

@@ -59,7 +59,7 @@ class tx_additionalreports_websitesconf implements tx_reports_Report
 	 */
 
 	public function getReport() {
-		$this->reportObject->doc->getPageRenderer()->addCssFile(t3lib_extMgm::extRelPath('additional_reports') . 'tx_additionalreports.css');
+		$this->reportObject->doc->getPageRenderer()->addCssFile(t3lib_extMgm::extRelPath('additional_reports') . 'res/tx_additionalreports.css');
 		$content = '';
 		$content .= tx_additionalreports_main::displayWebsitesConf();
 		return $content;
@@ -68,8 +68,8 @@ class tx_additionalreports_websitesconf implements tx_reports_Report
 }
 
 
-if (defined('TYPO3_MODE') && $TYPO3_CONF_VARS[TYPO3_MODE]['websitesconf']['ext/additional_reports/reports_websitesconf/class.tx_additionalreports_websitesconf.php']) {
-	include_once($TYPO3_CONF_VARS[TYPO3_MODE]['websitesconf']['ext/additional_reports/reports_websitesconf/class.tx_additionalreports_websitesconf.php']);
+if (defined('TYPO3_MODE') && $TYPO3_CONF_VARS[TYPO3_MODE]['websitesconf']['ext/additional_reports/reports/reports_websitesconf/class.tx_additionalreports_websitesconf.php']) {
+	include_once($TYPO3_CONF_VARS[TYPO3_MODE]['websitesconf']['ext/additional_reports/reports/reports_websitesconf/class.tx_additionalreports_websitesconf.php']);
 }
 
 ?>
