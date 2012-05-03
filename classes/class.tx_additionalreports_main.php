@@ -335,32 +335,36 @@ class tx_additionalreports_main
 						}
 
 						// need extconf update
-						$absPath        = tx_additionalreports_util::getExtPath($extKey, $extInfo['type']);
-						$configTemplate = t3lib_div::getUrl($absPath . 'ext_conf_template.txt');
-						/** @var $tsparserObj t3lib_TSparser */
-						$tsparserObj = t3lib_div::makeInstance('t3lib_TSparser');
-						$tsparserObj->parse($configTemplate);
-						$arr      = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][$extKey]);
-						$arr      = is_array($arr) ? $arr : array();
-						$diffConf = array_diff_key($tsparserObj->setup, $arr);
-						if (isset($diffConf['updateMessage'])) {
-							unset($diffConf['updateMessage']);
-						}
-						if (count($diffConf) > 0) {
-							$id    = 'extconf' . $extKey;
-							$datas = '<span style="color:white;">Diff : </span>' . tx_additionalreports_util::viewArray(
-								$diffConf
-							);
-							$datas .= '<span style="color:white;">$GLOBALS[\'TYPO3_CONF_VARS\'][\'EXT\'][\'extConf\'][\'' . $extKey . '\'] : </span>';
-							$datas .= tx_additionalreports_util::viewArray($arr);
-							$datas .= '<span style="color:white;">ext_conf_template.txt : </span>';
-							$datas .= tx_additionalreports_util::viewArray($tsparserObj->setup);
-							$dumpExtConf                                  = tx_additionalreports_util::writePopUp(
-								$id, $extKey, $datas
-							);
-							$markersArrayExtension['###CONFINTEGRITY###'] = $GLOBALS['LANG']->getLL(
-								'yes'
-							) . '&nbsp;&nbsp;' . $dumpExtConf;
+						$absPath = tx_additionalreports_util::getExtPath($extKey, $extInfo['type']);
+						if (is_file($absPath . 'ext_conf_template.txt')) {
+							$configTemplate = t3lib_div::getUrl($absPath . 'ext_conf_template.txt');
+							/** @var $tsparserObj t3lib_TSparser */
+							$tsparserObj = t3lib_div::makeInstance('t3lib_TSparser');
+							$tsparserObj->parse($configTemplate);
+							$arr      = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf'][$extKey]);
+							$arr      = is_array($arr) ? $arr : array();
+							$diffConf = array_diff_key($tsparserObj->setup, $arr);
+							if (isset($diffConf['updateMessage'])) {
+								unset($diffConf['updateMessage']);
+							}
+							if (count($diffConf) > 0) {
+								$id    = 'extconf' . $extKey;
+								$datas = '<span style="color:white;">Diff : </span>' . tx_additionalreports_util::viewArray(
+									$diffConf
+								);
+								$datas .= '<span style="color:white;">$GLOBALS[\'TYPO3_CONF_VARS\'][\'EXT\'][\'extConf\'][\'' . $extKey . '\'] : </span>';
+								$datas .= tx_additionalreports_util::viewArray($arr);
+								$datas .= '<span style="color:white;">ext_conf_template.txt : </span>';
+								$datas .= tx_additionalreports_util::viewArray($tsparserObj->setup);
+								$dumpExtConf                                  = tx_additionalreports_util::writePopUp(
+									$id, $extKey, $datas
+								);
+								$markersArrayExtension['###CONFINTEGRITY###'] = $GLOBALS['LANG']->getLL(
+									'yes'
+								) . '&nbsp;&nbsp;' . $dumpExtConf;
+							} else {
+								$markersArrayExtension['###CONFINTEGRITY###'] = $GLOBALS['LANG']->getLL('no');
+							}
 						} else {
 							$markersArrayExtension['###CONFINTEGRITY###'] = $GLOBALS['LANG']->getLL('no');
 						}
@@ -427,7 +431,7 @@ class tx_additionalreports_main
 
 		$markersArrayTemp = array();
 
-		if (count($items) > 0) {
+		if (count($itemsDev) > 0) {
 			foreach ($itemsDev as $itemKey => $itemValue) {
 				if (t3lib_extMgm::isLoaded($itemKey)) {
 					$markersArrayExtension = array();
@@ -484,7 +488,7 @@ class tx_additionalreports_main
 
 		$markersArrayTemp = array();
 
-		if (count($items) > 0) {
+		if (count($itemsUnloaded) > 0) {
 			foreach ($itemsUnloaded as $itemKey => $itemValue) {
 				$markersArrayExtension = array();
 				$extKey                = $itemKey;
@@ -827,7 +831,7 @@ class tx_additionalreports_main
 		$markersArray['###CHECKEDPLUGINSMODE7###'] = ($this->display == 7) ? ' checked="checked"' : '';
 		$markersArray['###LLL:MODE7###']           = $GLOBALS['LANG']->getLL('pluginsmode3hidden');
 
-		$markersArray['###LLL:CAUTION###']  = tx_additionalreports_util::writeInformation(
+		$markersArray['###LLL:CAUTION###'] = tx_additionalreports_util::writeInformation(
 			$GLOBALS['LANG']->getLL('careful'),
 			$GLOBALS['LANG']->getLL('carefuldesc')
 		);
@@ -1881,7 +1885,7 @@ class tx_additionalreports_main
 		$template->initTemplate('typo3conf/ext/additional_reports/res/templates/websiteconf.html');
 		$markersArray = array();
 
-		$items   = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
+		$items = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
 			'uid, title',
 			'pages',
 			'is_siteroot = 1 AND deleted = 0 AND hidden = 0 AND pid != -1',
@@ -1994,7 +1998,7 @@ class tx_additionalreports_main
 			foreach ($sqlStatements['update']['change'] as $itemKey => $itemValue) {
 				if (isset($sqlStatements['update']['change_currentValue'][$itemKey])) {
 					$markersArrayTemp[] = array(
-						'###VALUE###' => $itemValue . ' [current: ' . $sqlStatements['update']['change_currentValue'][$itemKey] . ']'
+						'###VALUE###' => $itemValue . ' -- [current: ' . $sqlStatements['update']['change_currentValue'][$itemKey] . ']'
 					);
 				} else {
 					$markersArrayTemp[] = array('###VALUE###' => $itemValue);
@@ -2051,9 +2055,11 @@ class tx_additionalreports_main
 			$markersArrayTemp                = array();
 			foreach ($sqlStatements['remove']['change_table'] as $itemKey => $itemValue) {
 				if (!empty($sqlStatements['remove']['tables_count'][$itemKey])) {
-					$markersArrayTemp[] = array('###VALUE###' => $itemValue . ' [' . $sqlStatements['remove']['tables_count'][$itemKey] . ']');
+					$markersArrayTemp[] = array(
+						'###VALUE###' => $itemValue . ' -- [' . $sqlStatements['remove']['tables_count'][$itemKey] . ']'
+					);
 				} else {
-					$markersArrayTemp[] = array('###VALUE###' => $itemValue . ' [empty]');
+					$markersArrayTemp[] = array('###VALUE###' => $itemValue . ' -- [empty]');
 				}
 			}
 			$markersArray['###REPORTS_DBCHECK_OBJECT###'] = $template->renderAllTemplate(
@@ -2068,9 +2074,11 @@ class tx_additionalreports_main
 			$markersArrayTemp                = array();
 			foreach ($sqlStatements['remove']['drop_table'] as $itemKey => $itemValue) {
 				if (!empty($sqlStatements['remove']['tables_count'][$itemKey])) {
-					$markersArrayTemp[] = array('###VALUE###' => $itemValue . ' [' . $sqlStatements['remove']['tables_count'][$itemKey] . ']');
+					$markersArrayTemp[] = array(
+						'###VALUE###' => $itemValue . ' -- [' . $sqlStatements['remove']['tables_count'][$itemKey] . ']'
+					);
 				} else {
-					$markersArrayTemp[] = array('###VALUE###' => $itemValue . ' [empty]');
+					$markersArrayTemp[] = array('###VALUE###' => $itemValue . ' -- [empty]');
 				}
 			}
 			$markersArray['###REPORTS_DBCHECK_OBJECT###'] = $template->renderAllTemplate(
