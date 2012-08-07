@@ -32,16 +32,6 @@
 class tx_additionalreports_main
 {
 	/**
-	 * Init the class
-	 * Include the locallang file
-	 *
-	 * @return void
-	 */
-	public function init() {
-		$GLOBALS['LANG']->includeLLFile('EXT:additional_reports/locallang.xml');
-	}
-
-	/**
 	 * Get the global css path
 	 *
 	 * @return string
@@ -2086,6 +2076,25 @@ class tx_additionalreports_main
 			);
 			$content .= $template->renderAllTemplate($markersArray, '###REPORTS_DBCHECK###');
 		}
+
+		// dump sql structure
+		$items = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
+			'table_name',
+			'information_schema.tables',
+			'table_schema = \'' . TYPO3_db . '\'', '', 'table_name'
+		);
+
+		$sqlStructure = '';
+
+		foreach ($items as $table) {
+			$resSqlDump = $GLOBALS['TYPO3_DB']->sql_query('SHOW CREATE TABLE ' . $table['table_name']);
+			$sqlDump    = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($resSqlDump);
+			$sqlStructure .= $sqlDump['Create Table'] . "\r\n\r\n";
+			$GLOBALS['TYPO3_DB']->sql_free_result($resSqlDump);
+		}
+
+		$content .= '<h3 class="uppercase">Dump SQL Structure (md5:' . md5($sqlStructure) . ')</h3>';
+		$content .= '<textarea style="width:100%;height:200px;">' . $sqlStructure . '</textarea>';
 
 		return $content;
 	}

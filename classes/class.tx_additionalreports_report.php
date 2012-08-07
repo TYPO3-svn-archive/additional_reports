@@ -2,7 +2,7 @@
 /***************************************************************
  *  Copyright notice
  *
- *  (c) 2010 CERDAN Yohann <cerdanyohann@yahoo.fr>
+ *  (c) 2012 CERDAN Yohann <cerdanyohann@yahoo.fr>
  *  All rights reserved
  *
  *  This script is part of the TYPO3 project. The TYPO3 project is
@@ -30,27 +30,62 @@
  * @package        TYPO3
  */
 
-class tx_additionalreports_hooks extends tx_additionalreports_report implements tx_reports_Report
+class tx_additionalreports_report
 {
 
 	/**
-	 * This method renders the report
+	 * Back-reference to the calling reports module
 	 *
-	 * @return    string    The status report as HTML
+	 * @var    object    $reportObject
 	 */
-	public function getReport() {
-		$content = '<p class="help">' . $GLOBALS['LANG']->getLL('hooks_description') . '</p>';
-		$content .= tx_additionalreports_main::displayHooks();
-		return $content;
+	protected $reportObject;
+
+	/**
+	 * Base url of the report
+	 *
+	 * @var string $baseURL
+	 */
+	public $baseURL = '';
+
+	/**
+	 * Constructor for class tx_additionalreports_report
+	 *
+	 * @param    object    Back-reference to the calling reports module
+	 */
+	public function __construct($reportObject) {
+		$this->reportObject = $reportObject;
+		// include Css files
+		$this->setCss(tx_additionalreports_main::getCss());
+		// include LL
+		$GLOBALS['LANG']->includeLLFile('EXT:additional_reports/locallang.xml');
+		$this->baseURL = tx_additionalreports_util::getBaseUrl();
+	}
+
+	/**
+	 * Set a Css
+	 *
+	 * @param $path
+	 * @return void
+	 */
+	public function setCss($path) {
+		if (isset($this->reportObject->doc)) {
+			$this->reportObject->doc->getPageRenderer()->addCssFile($path);
+		}
+	}
+
+	/**
+	 * Set a Js
+	 *
+	 * @param $path
+	 * @return void
+	 */
+	public function setJs($path) {
+		if (isset($this->reportObject->doc)) {
+			$this->reportObject->doc->getPageRenderer()->addJsFile($path);
+		}
 	}
 
 }
 
-
-if (defined('TYPO3_MODE')
-	&& $TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/additional_reports/reports/reports_hooks/class.tx_additionalreports_hooks.php']
-) {
-	include_once($TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/additional_reports/reports/reports_hooks/class.tx_additionalreports_hooks.php']);
-}
 
 ?>

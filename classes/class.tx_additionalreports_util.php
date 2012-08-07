@@ -50,6 +50,28 @@ class tx_additionalreports_util
 	}
 
 	/**
+	 * Get base url of the report (use to generate links)
+	 *
+	 * @return string url
+	 */
+	public function getBaseUrl() {
+		// since 6.0> extbase is using by reports module
+		$baseUrl    = t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR') . 'mod.php?';
+		$parameters = array();
+		if (self::intFromVer(TYPO3_version) < 6000000) {
+			$parameters[] = 'M=tools_txreportsM1';
+		} else {
+			$vars         = t3lib_div::_GET('tx_reports_tools_reportstxreportsm1');
+			$parameters[] = 'M=tools_ReportsTxreportsm1';
+			$parameters[] = 'tx_reports_tools_reportstxreportsm1%5Bextension%5D=additional_reports';
+			$parameters[] = 'tx_reports_tools_reportstxreportsm1%5Breport%5D=' . $vars['report'];
+			$parameters[] = 'tx_reports_tools_reportstxreportsm1%5Baction%5D=detail';
+			$parameters[] = 'tx_reports_tools_reportstxreportsm1%5Bcontroller%5D=Report';
+		}
+		return $baseUrl . implode('&', $parameters);
+	}
+
+	/**
 	 * Define all the sub modules
 	 *
 	 * @return array
@@ -884,6 +906,10 @@ class tx_additionalreports_util
 				break;
 		}
 
+		if (t3lib_extMgm::isLoaded('templavoila')) {
+			$where .= self::getTvFlexWhere();
+		}
+
 		$groupBy = '';
 		$orderBy = 'tt_content.list_type';
 
@@ -917,11 +943,31 @@ class tx_additionalreports_util
 				break;
 		}
 
+		if (t3lib_extMgm::isLoaded('templavoila')) {
+			$where .= self::getTvFlexWhere();
+		}
+
 		$groupBy = '';
 		$orderBy = 'tt_content.CType';
 
 		$items = $GLOBALS['TYPO3_DB']->exec_SELECTgetRows($select, $from, $where, $groupBy, $orderBy);
 		return count($items);
+	}
+
+	/**
+	 * Get sql where for templavoila flex (to check content is in teh flexform)
+	 *
+	 * @return string
+	 */
+	public static function getTvFlexWhere() {
+		$where = " ";
+		$where .= "AND (";
+		$where .= "pages.tx_templavoila_flex REGEXP concat('<value index=\"vDEF\">',tt_content.uid,'</value>')";
+		$where .= "OR pages.tx_templavoila_flex REGEXP concat('<value index=\"vDEF\">',tt_content.uid,',.*</value>')";
+		$where .= "OR pages.tx_templavoila_flex REGEXP concat('<value index=\"vDEF\">.*,',tt_content.uid,'</value>')";
+		$where .= "OR pages.tx_templavoila_flex REGEXP concat('<value index=\"vDEF\">.*,',tt_content.uid,',.*</value>')";
+		$where .= ")";
+		return $where;
 	}
 
 	/**
@@ -931,6 +977,9 @@ class tx_additionalreports_util
 	 * @return array
 	 */
 	public static function getAllDifferentPlugins($where) {
+		if (t3lib_extMgm::isLoaded('templavoila')) {
+			$where .= self::getTvFlexWhere();
+		}
 		return $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
 			'DISTINCT tt_content.list_type',
 			'tt_content,pages',
@@ -977,6 +1026,9 @@ class tx_additionalreports_util
 	 * @return array
 	 */
 	public static function getAllDifferentCtypes($where) {
+		if (t3lib_extMgm::isLoaded('templavoila')) {
+			$where .= self::getTvFlexWhere();
+		}
 		return $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
 			'DISTINCT tt_content.CType',
 			'tt_content,pages',
@@ -1024,6 +1076,9 @@ class tx_additionalreports_util
 	 * @return array
 	 */
 	public static function getAllPlugins($where, $limit = '') {
+		if (t3lib_extMgm::isLoaded('templavoila')) {
+			$where .= self::getTvFlexWhere();
+		}
 		return $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
 			'DISTINCT tt_content.list_type,tt_content.pid,tt_content.uid,' .
 				'pages.title,pages.hidden as "hiddenpages",tt_content.hidden as "hiddentt_content"',
@@ -1044,6 +1099,9 @@ class tx_additionalreports_util
 	 * @return array
 	 */
 	public static function getAllCtypes($where, $limit = '') {
+		if (t3lib_extMgm::isLoaded('templavoila')) {
+			$where .= self::getTvFlexWhere();
+		}
 		return $GLOBALS['TYPO3_DB']->exec_SELECTgetRows(
 			'DISTINCT tt_content.CType,tt_content.pid,tt_content.uid,pages.title,' .
 				'pages.hidden as "hiddenpages",tt_content.hidden as "hiddentt_content"',
